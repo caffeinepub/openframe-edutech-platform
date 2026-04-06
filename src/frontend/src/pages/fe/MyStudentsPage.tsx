@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, Loader2, Search } from "lucide-react";
+import { Edit, IndianRupee, Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
@@ -16,6 +16,21 @@ import { CourseTypeBadge, StatusBadge } from "../../components/StatusBadge";
 import { useApp } from "../../context/AppContext";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
+
+function MediumBadge({ medium }: { medium?: string }) {
+  if (!medium) return null;
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+        medium === "English"
+          ? "bg-blue-50 text-blue-700 border border-blue-200"
+          : "bg-orange-50 text-orange-700 border border-orange-200"
+      }`}
+    >
+      {medium}
+    </span>
+  );
+}
 
 export default function MyStudentsPage() {
   const { session } = useApp();
@@ -98,7 +113,8 @@ export default function MyStudentsPage() {
                   {[
                     "Name",
                     "Course",
-                    "Amount",
+                    "Medium",
+                    "Fee Plan",
                     "Status",
                     "Payment",
                     "Date",
@@ -138,8 +154,21 @@ export default function MyStudentsPage() {
                         <CourseTypeBadge type={r.courseType} />
                       </div>
                     </td>
-                    <td className="p-4 text-sm font-medium">
-                      ₹{r.price.toLocaleString("en-IN")}
+                    <td className="p-4">
+                      <MediumBadge medium={r.medium} />
+                    </td>
+                    <td className="p-4">
+                      <div className="space-y-0.5">
+                        {r.feePlan && (
+                          <p className="text-xs font-medium text-foreground">
+                            {r.feePlan}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground flex items-center gap-0.5">
+                          <IndianRupee className="h-3 w-3" />
+                          {r.price.toLocaleString("en-IN")}
+                        </p>
+                      </div>
                     </td>
                     <td className="p-4">
                       <StatusBadge status={r.status} />

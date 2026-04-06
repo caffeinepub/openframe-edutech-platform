@@ -1,5 +1,12 @@
 import { Progress } from "@/components/ui/progress";
-import { Clock, IndianRupee, Target, UserPlus, Users } from "lucide-react";
+import {
+  Clock,
+  IndianRupee,
+  Target,
+  TrendingUp,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -17,6 +24,10 @@ export default function FEDashboard() {
     today: 0,
     paid: 0,
     pending: 0,
+    totalEarned: 0,
+    earnedBasic: 0,
+    earnedStandard: 0,
+    earnedPremium: 0,
   });
 
   useEffect(() => {
@@ -29,8 +40,29 @@ export default function FEDashboard() {
     const paid = allRegs.filter((r) => r.paymentStatus === "Paid").length;
     const pending = allRegs.filter((r) => r.status === "Pending").length;
 
+    const paidRegs = allRegs.filter((r) => r.paymentStatus === "Paid");
+    const totalEarned = paidRegs.reduce((sum, r) => sum + r.price, 0);
+    const earnedBasic = paidRegs
+      .filter((r) => r.feePlan === "Basic")
+      .reduce((sum, r) => sum + r.price, 0);
+    const earnedStandard = paidRegs
+      .filter((r) => r.feePlan === "Standard")
+      .reduce((sum, r) => sum + r.price, 0);
+    const earnedPremium = paidRegs
+      .filter((r) => r.feePlan === "Premium")
+      .reduce((sum, r) => sum + r.price, 0);
+
     setRegs(allRegs.slice(0, 5));
-    setStats({ total: allRegs.length, today: todayRegs, paid, pending });
+    setStats({
+      total: allRegs.length,
+      today: todayRegs,
+      paid,
+      pending,
+      totalEarned,
+      earnedBasic,
+      earnedStandard,
+      earnedPremium,
+    });
   }, [session]);
 
   const dailyProgress = Math.min((stats.today / DAILY_TARGET) * 100, 100);
@@ -85,6 +117,53 @@ export default function FEDashboard() {
         />
       </div>
 
+      {/* Earnings Card */}
+      <div
+        className="bg-white rounded-xl border border-border shadow-card p-5"
+        data-ocid="fe.earnings.section"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="h-4 w-4 text-green-600" />
+          <h3 className="font-semibold text-foreground">Total Earnings</h3>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <p className="text-3xl font-bold text-green-600">
+              ₹{stats.totalEarned.toLocaleString("en-IN")}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              From {stats.paid} paid registration{stats.paid !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex gap-4 text-sm">
+            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
+              <span className="text-xs text-muted-foreground mb-0.5">
+                Basic
+              </span>
+              <span className="font-semibold text-foreground">
+                ₹{stats.earnedBasic.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
+              <span className="text-xs text-muted-foreground mb-0.5">
+                Standard
+              </span>
+              <span className="font-semibold text-foreground">
+                ₹{stats.earnedStandard.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
+              <span className="text-xs text-muted-foreground mb-0.5">
+                Premium
+              </span>
+              <span className="font-semibold text-foreground">
+                ₹{stats.earnedPremium.toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Daily Target Progress */}
       <div className="bg-white rounded-xl border border-border shadow-card p-5">
         <div className="flex items-center justify-between mb-3">
@@ -125,10 +204,16 @@ export default function FEDashboard() {
                   Course
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
+                  Fee Plan
+                </th>
+                <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Status
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Payment
+                </th>
+                <th className="text-left p-4 text-xs font-medium text-muted-foreground">
+                  Amount
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Date
@@ -139,7 +224,7 @@ export default function FEDashboard() {
               {regs.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={7}
                     className="text-center p-6 text-muted-foreground"
                   >
                     No registrations yet. Start registering students!
@@ -166,10 +251,26 @@ export default function FEDashboard() {
                       {r.courseName}
                     </td>
                     <td className="p-4">
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          r.feePlan === "Premium"
+                            ? "bg-purple-100 text-purple-700"
+                            : r.feePlan === "Standard"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {r.feePlan}
+                      </span>
+                    </td>
+                    <td className="p-4">
                       <StatusBadge status={r.status} />
                     </td>
                     <td className="p-4">
                       <StatusBadge status={r.paymentStatus} />
+                    </td>
+                    <td className="p-4 font-medium text-foreground">
+                      ₹{r.price}
                     </td>
                     <td className="p-4 text-xs text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString("en-IN", {

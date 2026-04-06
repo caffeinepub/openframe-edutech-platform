@@ -32,12 +32,40 @@ import { CourseTypeBadge, StatusBadge } from "../../components/StatusBadge";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
+function MediumBadge({ medium }: { medium?: string }) {
+  if (!medium) return null;
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+        medium === "English"
+          ? "bg-blue-50 text-blue-700 border border-blue-200"
+          : "bg-orange-50 text-orange-700 border border-orange-200"
+      }`}
+    >
+      {medium}
+    </span>
+  );
+}
+
+function FeePlanBadge({ feePlan, price }: { feePlan?: string; price: number }) {
+  if (!feePlan) return <span>₹{price.toLocaleString("en-IN")}</span>;
+  return (
+    <span className="text-xs">
+      <span className="font-medium">{feePlan}</span>
+      <span className="text-muted-foreground">
+        {" "}
+        — ₹{price.toLocaleString("en-IN")}
+      </span>
+    </span>
+  );
+}
+
 export default function RegistrationsPage() {
   const [regs, setRegs] = useState<Registration[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPayment, setFilterPayment] = useState("All");
-  const [filterCourse, setFilterCourse] = useState("All");
+  const [filterMedium, setFilterMedium] = useState("All");
   const [approveReg, setApproveReg] = useState<Registration | null>(null);
   const [classLink, setClassLink] = useState("");
   const [schedule, setSchedule] = useState("");
@@ -55,8 +83,8 @@ export default function RegistrationsPage() {
     const matchStatus = filterStatus === "All" || r.status === filterStatus;
     const matchPayment =
       filterPayment === "All" || r.paymentStatus === filterPayment;
-    const matchCourse = filterCourse === "All" || r.courseType === filterCourse;
-    return matchSearch && matchStatus && matchPayment && matchCourse;
+    const matchMedium = filterMedium === "All" || r.medium === filterMedium;
+    return matchSearch && matchStatus && matchPayment && matchMedium;
   });
 
   const handleApprove = async (e: React.FormEvent) => {
@@ -175,15 +203,15 @@ export default function RegistrationsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterCourse} onValueChange={setFilterCourse}>
+        <Select value={filterMedium} onValueChange={setFilterMedium}>
           <SelectTrigger
             className="w-36"
-            data-ocid="admin.registrations_course.select"
+            data-ocid="admin.registrations_medium.select"
           >
-            <SelectValue placeholder="Course" />
+            <SelectValue placeholder="Medium" />
           </SelectTrigger>
           <SelectContent>
-            {["All", "Basic", "Standard", "Premium"].map((s) => (
+            {["All", "English", "Kannada"].map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
               </SelectItem>
@@ -201,14 +229,15 @@ export default function RegistrationsPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[900px]">
+            <table className="w-full text-sm min-w-[1000px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   {[
                     "Student",
                     "Course",
+                    "Medium",
+                    "Fee Plan",
                     "FE",
-                    "Amount",
                     "Status",
                     "Payment",
                     "Date",
@@ -242,8 +271,19 @@ export default function RegistrationsPage() {
                     </td>
                     <td className="p-4">
                       <div>
-                        <p className="text-foreground">{r.courseName}</p>
+                        <p className="text-foreground text-xs">
+                          {r.courseName}
+                        </p>
                         <CourseTypeBadge type={r.courseType} />
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <MediumBadge medium={r.medium} />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-0.5">
+                        <IndianRupee className="h-3 w-3 text-muted-foreground" />
+                        <FeePlanBadge feePlan={r.feePlan} price={r.price} />
                       </div>
                     </td>
                     <td className="p-4">
@@ -252,12 +292,6 @@ export default function RegistrationsPage() {
                         <p className="text-xs text-muted-foreground">
                           {r.feCode}
                         </p>
-                      </div>
-                    </td>
-                    <td className="p-4 font-medium">
-                      <div className="flex items-center gap-0.5">
-                        <IndianRupee className="h-3 w-3" />
-                        {r.price.toLocaleString("en-IN")}
                       </div>
                     </td>
                     <td className="p-4">
@@ -346,6 +380,18 @@ export default function RegistrationsPage() {
                   <span className="font-medium">Course:</span>{" "}
                   {approveReg?.courseName}
                 </p>
+                {approveReg?.medium && (
+                  <p>
+                    <span className="font-medium">Medium:</span>{" "}
+                    {approveReg.medium}
+                  </p>
+                )}
+                {approveReg?.feePlan && (
+                  <p>
+                    <span className="font-medium">Fee Plan:</span>{" "}
+                    {approveReg.feePlan} — ₹{approveReg.price}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="class-link">

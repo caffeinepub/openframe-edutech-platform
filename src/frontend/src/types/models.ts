@@ -12,12 +12,14 @@ export interface FieldExecutive {
 
 export interface Course {
   id: number;
-  title: string;
-  courseType: "Basic" | "Standard" | "Premium";
+  title: string; // auto-generated e.g. "5th Standard – English"
+  standard: number; // 1–12
+  medium: "English" | "Kannada";
+  courseType: "Basic" | "Standard" | "Premium"; // legacy badge usage
   description: string;
   videoUrl: string;
   notes: string;
-  price: number;
+  price: number; // legacy field; fee plan drives registration price
   passingScore: number;
   isActive: boolean;
   createdAt: string;
@@ -41,6 +43,8 @@ export interface Registration {
   courseId: number;
   courseName: string;
   courseType: string;
+  medium: string; // "English" or "Kannada"
+  feePlan: "Basic" | "Standard" | "Premium";
   price: number;
   status: "Pending" | "Approved" | "Rejected";
   paymentStatus: "Pending" | "Paid";

@@ -18,7 +18,7 @@ const KEYS = {
   EXAM_ATTEMPTS: "openframe_exam_attempts",
   CERTIFICATES: "openframe_certificates",
   NOTIFICATIONS: "openframe_notifications",
-  SEEDED: "openframe_seeded",
+  SEEDED: "openframe_seeded_v2",
   SESSION: "openframe_session",
   MIGRATED_V1: "openframe_migrated_v1",
 };
@@ -47,6 +47,28 @@ function migrateV1(): void {
   localStorage.setItem(KEYS.MIGRATED_V1, "true");
 }
 
+const ORDINALS = [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th",
+  "6th",
+  "7th",
+  "8th",
+  "9th",
+  "10th",
+  "11th",
+  "12th",
+];
+
+function makeCourseTitle(
+  standard: number,
+  medium: "English" | "Kannada",
+): string {
+  return `${ORDINALS[standard - 1]} Standard \u2013 ${medium}`;
+}
+
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
   // Always run migration first, even if already seeded
@@ -54,212 +76,109 @@ export function seedIfNeeded(): void {
 
   if (localStorage.getItem(KEYS.SEEDED)) return;
 
+  // Build 24 courses: 12 English (IDs 1–12) + 12 Kannada (IDs 13–24)
   const courses: Course[] = [
-    {
-      id: 1,
-      title: "Web Fundamentals",
-      courseType: "Basic",
-      description:
-        "Learn the core building blocks of the web: HTML, CSS, and JavaScript. Perfect for beginners starting their tech journey.",
-      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      notes:
-        "HTML5 semantic elements, CSS Flexbox & Grid, JavaScript ES6+, DOM manipulation, responsive design fundamentals.",
-      price: 2999,
+    ...Array.from({ length: 12 }, (_, i) => ({
+      id: i + 1,
+      title: makeCourseTitle(i + 1, "English"),
+      standard: i + 1,
+      medium: "English" as const,
+      courseType: "Basic" as const,
+      description: "",
+      videoUrl: "",
+      notes: "",
+      price: 50,
       passingScore: 60,
       isActive: true,
       createdAt: "2024-01-15T10:00:00.000Z",
-    },
-    {
-      id: 2,
-      title: "Full Stack Development",
-      courseType: "Standard",
-      description:
-        "Master both frontend and backend development with React, Node.js, and MongoDB. Build real-world projects from scratch.",
-      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      notes:
-        "React 18, Node.js, Express, MongoDB, REST APIs, Authentication, Deployment on cloud platforms.",
-      price: 5999,
-      passingScore: 65,
+    })),
+    ...Array.from({ length: 12 }, (_, i) => ({
+      id: i + 13,
+      title: makeCourseTitle(i + 1, "Kannada"),
+      standard: i + 1,
+      medium: "Kannada" as const,
+      courseType: "Basic" as const,
+      description: "",
+      videoUrl: "",
+      notes: "",
+      price: 50,
+      passingScore: 60,
       isActive: true,
       createdAt: "2024-01-15T10:00:00.000Z",
-    },
-    {
-      id: 3,
-      title: "Advanced Software Engineering",
-      courseType: "Premium",
-      description:
-        "Deep dive into system design, microservices, DevOps, and enterprise-grade software architecture. For experienced developers.",
-      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      notes:
-        "System design patterns, Microservices architecture, Docker & Kubernetes, CI/CD pipelines, Cloud architecture (AWS/GCP), Performance optimization.",
-      price: 9999,
-      passingScore: 70,
-      isActive: true,
-      createdAt: "2024-01-15T10:00:00.000Z",
-    },
+    })),
   ];
 
   const questions: ExamQuestion[] = [
-    // Course 1 - Web Fundamentals
+    // Course 1 – 1st Standard English
     {
       id: 1,
       courseId: 1,
-      question: "Which HTML tag is used to define an internal style sheet?",
-      options: ["<script>", "<css>", "<style>", "<link>"],
-      correctIndex: 2,
+      question: "Which letter comes after 'D' in the alphabet?",
+      options: ["C", "E", "F", "G"],
+      correctIndex: 1,
     },
     {
       id: 2,
       courseId: 1,
-      question: "What does CSS stand for?",
-      options: [
-        "Creative Style Sheets",
-        "Cascading Style Sheets",
-        "Computer Style Sheets",
-        "Colorful Style Sheets",
-      ],
-      correctIndex: 1,
+      question: "How many vowels are in the English alphabet?",
+      options: ["3", "4", "5", "6"],
+      correctIndex: 2,
     },
     {
       id: 3,
       courseId: 1,
-      question:
-        "Which JavaScript method is used to select elements by class name?",
-      options: [
-        "getElementById()",
-        "getElementByClass()",
-        "getElementsByClassName()",
-        "querySelector()",
-      ],
-      correctIndex: 2,
+      question: "What is 2 + 3?",
+      options: ["4", "5", "6", "7"],
+      correctIndex: 1,
     },
     {
       id: 4,
       courseId: 1,
-      question: "What is the correct syntax for a CSS Flexbox container?",
-      options: [
-        "display: block;",
-        "display: flex;",
-        "display: grid;",
-        "display: inline;",
-      ],
-      correctIndex: 1,
+      question: "Which shape has 3 sides?",
+      options: ["Square", "Circle", "Triangle", "Rectangle"],
+      correctIndex: 2,
     },
     {
       id: 5,
       courseId: 1,
-      question:
-        "Which HTML attribute specifies an alternate text for an image?",
-      options: ["title", "src", "alt", "href"],
-      correctIndex: 2,
+      question: "What color is the sky on a clear day?",
+      options: ["Green", "Red", "Yellow", "Blue"],
+      correctIndex: 3,
     },
-    // Course 2 - Full Stack
+    // Course 2 – 2nd Standard English
     {
       id: 6,
       courseId: 2,
-      question: "What is React's virtual DOM?",
-      options: [
-        "A direct copy of the browser DOM",
-        "A lightweight JavaScript representation of the real DOM",
-        "A server-side rendering technique",
-        "A database management system",
-      ],
-      correctIndex: 1,
+      question: "What is 5 × 2?",
+      options: ["8", "9", "10", "11"],
+      correctIndex: 2,
     },
     {
       id: 7,
       courseId: 2,
-      question:
-        "Which hook is used to manage state in React functional components?",
-      options: ["useEffect", "useContext", "useState", "useReducer"],
+      question: "Which animal says 'moo'?",
+      options: ["Dog", "Cat", "Cow", "Horse"],
       correctIndex: 2,
     },
     {
       id: 8,
       courseId: 2,
-      question: "What is the primary purpose of Express.js?",
-      options: [
-        "Frontend framework",
-        "Database ORM",
-        "Minimalist web framework for Node.js",
-        "Testing library",
-      ],
+      question: "How many days are in a week?",
+      options: ["5", "6", "7", "8"],
       correctIndex: 2,
     },
     {
       id: 9,
       courseId: 2,
-      question: "In REST APIs, which HTTP method is used to update a resource?",
-      options: ["GET", "POST", "PUT", "DELETE"],
+      question: "What is the opposite of 'hot'?",
+      options: ["Warm", "Cool", "Cold", "Freeze"],
       correctIndex: 2,
     },
     {
       id: 10,
       courseId: 2,
-      question: "What is MongoDB?",
-      options: [
-        "A relational database",
-        "A NoSQL document database",
-        "A graph database",
-        "An in-memory cache",
-      ],
-      correctIndex: 1,
-    },
-    // Course 3 - Advanced
-    {
-      id: 11,
-      courseId: 3,
-      question: "What is the primary benefit of microservices architecture?",
-      options: [
-        "Simpler codebase",
-        "Independent deployment and scalability of services",
-        "Faster development speed",
-        "Reduced infrastructure costs",
-      ],
-      correctIndex: 1,
-    },
-    {
-      id: 12,
-      courseId: 3,
-      question: "What does Docker primarily solve?",
-      options: [
-        "Database performance",
-        "Frontend rendering",
-        "Application containerization and portability",
-        "Network security",
-      ],
-      correctIndex: 2,
-    },
-    {
-      id: 13,
-      courseId: 3,
-      question: "In Kubernetes, what is a Pod?",
-      options: [
-        "A virtual machine",
-        "The smallest deployable unit that can contain one or more containers",
-        "A load balancer",
-        "A storage volume",
-      ],
-      correctIndex: 1,
-    },
-    {
-      id: 14,
-      courseId: 3,
-      question: "What is CI/CD?",
-      options: [
-        "Cache Invalidation / Content Delivery",
-        "Continuous Integration / Continuous Deployment",
-        "Code Inspection / Code Deployment",
-        "Component Interface / Component Design",
-      ],
-      correctIndex: 1,
-    },
-    {
-      id: 15,
-      courseId: 3,
-      question:
-        "Which design pattern decouples the creation of objects from their usage?",
-      options: ["Singleton", "Observer", "Factory", "Decorator"],
+      question: "Which planet do we live on?",
+      options: ["Mars", "Venus", "Earth", "Jupiter"],
       correctIndex: 2,
     },
   ];
@@ -321,13 +240,15 @@ export function seedIfNeeded(): void {
       feName: "Rahul Sharma",
       feCode: "FE001",
       courseId: 2,
-      courseName: "Full Stack Development",
-      courseType: "Standard",
-      price: 5999,
+      courseName: "2nd Standard \u2013 English",
+      courseType: "Basic",
+      medium: "English",
+      feePlan: "Standard",
+      price: 100,
       status: "Approved",
       paymentStatus: "Paid",
       classLink: "https://meet.google.com/abc-defg-hij",
-      schedule: "Mon, Wed, Fri — 7:00 PM to 9:00 PM IST",
+      schedule: "Mon, Wed, Fri \u2014 7:00 PM to 9:00 PM IST",
       createdAt: "2024-03-01T10:00:00.000Z",
       updatedAt: "2024-03-03T14:00:00.000Z",
     },
@@ -339,9 +260,11 @@ export function seedIfNeeded(): void {
       feName: "Priya Singh",
       feCode: "FE002",
       courseId: 1,
-      courseName: "Web Fundamentals",
+      courseName: "1st Standard \u2013 English",
       courseType: "Basic",
-      price: 2999,
+      medium: "English",
+      feePlan: "Basic",
+      price: 50,
       status: "Approved",
       paymentStatus: "Pending",
       classLink: "",
@@ -356,10 +279,12 @@ export function seedIfNeeded(): void {
       feId: 1,
       feName: "Rahul Sharma",
       feCode: "FE001",
-      courseId: 3,
-      courseName: "Advanced Software Engineering",
-      courseType: "Premium",
-      price: 9999,
+      courseId: 14,
+      courseName: "2nd Standard \u2013 Kannada",
+      courseType: "Basic",
+      medium: "Kannada",
+      feePlan: "Premium",
+      price: 150,
       status: "Pending",
       paymentStatus: "Pending",
       classLink: "",
@@ -375,7 +300,7 @@ export function seedIfNeeded(): void {
       studentId: 1,
       registrationId: 1,
       courseId: 2,
-      answers: [1, 2, 2, 2, 1],
+      answers: [2, 2, 2, 2, 2],
       score: 80,
       passed: true,
       takenAt: "2024-04-01T15:00:00.000Z",
@@ -389,7 +314,7 @@ export function seedIfNeeded(): void {
       registrationId: 1,
       courseId: 2,
       studentName: "Amit Kumar",
-      courseName: "Full Stack Development",
+      courseName: "2nd Standard \u2013 English",
       certNumber: "CERT-2024-00001",
       issuedAt: "2024-04-01T15:30:00.000Z",
     },

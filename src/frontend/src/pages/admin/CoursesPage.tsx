@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,8 +46,31 @@ import { CourseTypeBadge } from "../../components/StatusBadge";
 import { db } from "../../lib/storage";
 import type { Course, ExamQuestion } from "../../types/models";
 
+const ORDINALS = [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th",
+  "6th",
+  "7th",
+  "8th",
+  "9th",
+  "10th",
+  "11th",
+  "12th",
+];
+
+function makeCourseTitle(
+  standard: number,
+  medium: "English" | "Kannada",
+): string {
+  return `${ORDINALS[standard - 1]} Standard \u2013 ${medium}`;
+}
+
 interface CourseForm {
-  title: string;
+  standard: string;
+  medium: "English" | "Kannada";
   courseType: "Basic" | "Standard" | "Premium";
   description: string;
   videoUrl: string;
@@ -56,14 +80,30 @@ interface CourseForm {
 }
 
 const defaultForm: CourseForm = {
-  title: "",
+  standard: "1",
+  medium: "English",
   courseType: "Basic",
   description: "",
   videoUrl: "",
   notes: "",
-  price: "",
+  price: "50",
   passingScore: "60",
 };
+
+function MediumBadge({ medium }: { medium: string }) {
+  return (
+    <Badge
+      variant="outline"
+      className={`text-xs ${
+        medium === "English"
+          ? "border-blue-200 bg-blue-50 text-blue-700"
+          : "border-orange-200 bg-orange-50 text-orange-700"
+      }`}
+    >
+      {medium}
+    </Badge>
+  );
+}
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -101,13 +141,17 @@ export default function CoursesPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 400));
     const all = db.getCourses();
+    const standard = Number(form.standard);
+    const title = makeCourseTitle(standard, form.medium);
 
     if (editCourse) {
       const updated = all.map((c) =>
         c.id === editCourse.id
           ? {
               ...c,
-              title: form.title,
+              standard,
+              medium: form.medium,
+              title,
               courseType: form.courseType,
               description: form.description,
               videoUrl: form.videoUrl,
@@ -122,7 +166,9 @@ export default function CoursesPage() {
     } else {
       const newCourse: Course = {
         id: db.nextId(all),
-        title: form.title,
+        standard,
+        medium: form.medium,
+        title,
         courseType: form.courseType,
         description: form.description,
         videoUrl: form.videoUrl,
@@ -207,7 +253,8 @@ export default function CoursesPage() {
   const openEditCourse = (course: Course) => {
     setEditCourse(course);
     setForm({
-      title: course.title,
+      standard: String(course.standard ?? 1),
+      medium: course.medium ?? "English",
       courseType: course.courseType,
       description: course.description,
       videoUrl: course.videoUrl,
@@ -288,6 +335,7 @@ export default function CoursesPage() {
                           {course.title}
                         </h3>
                         <CourseTypeBadge type={course.courseType} />
+                        <MediumBadge medium={course.medium ?? "English"} />
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
                         {course.description}
@@ -299,17 +347,19 @@ export default function CoursesPage() {
                             {course.price.toLocaleString("en-IN")}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Video className="h-3.5 w-3.5" />
-                          <a
-                            href={course.videoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary hover:underline text-xs"
-                          >
-                            Video Link
-                          </a>
-                        </div>
+                        {course.videoUrl && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Video className="h-3.5 w-3.5" />
+                            <a
+                              href={course.videoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline text-xs"
+                            >
+                              Video Link
+                            </a>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <HelpCircle className="h-3.5 w-3.5" />
                           <span>{courseQs.length} questions</span>
@@ -567,19 +617,78 @@ export default function CoursesPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-2">
-              <div>
-                <Label htmlFor="c-title">Course Title *</Label>
-                <Input
-                  id="c-title"
-                  value={form.title}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, title: e.target.value }))
-                  }
-                  placeholder="e.g. Web Fundamentals"
-                  className="mt-1"
-                  data-ocid="admin.course_title.input"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Standard *</Label>
+                  <Select
+                    value={form.standard}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, standard: v }))
+                    }
+                  >
+                    <SelectTrigger
+                      className="mt-1"
+                      data-ocid="admin.course_standard.select"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "1st",
+                        "2nd",
+                        "3rd",
+                        "4th",
+                        "5th",
+                        "6th",
+                        "7th",
+                        "8th",
+                        "9th",
+                        "10th",
+                        "11th",
+                        "12th",
+                      ].map((ord, i) => (
+                        <SelectItem key={ord} value={String(i + 1)}>
+                          {ord} Standard
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Medium *</Label>
+                  <Select
+                    value={form.medium}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        medium: v as "English" | "Kannada",
+                      }))
+                    }
+                  >
+                    <SelectTrigger
+                      className="mt-1"
+                      data-ocid="admin.course_medium.select"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Kannada">Kannada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              {/* Auto-generated title preview */}
+              <div className="bg-muted/40 rounded-lg px-3 py-2 text-sm">
+                <span className="text-muted-foreground text-xs font-semibold">
+                  COURSE TITLE:{" "}
+                </span>
+                <span className="font-medium text-foreground">
+                  {makeCourseTitle(Number(form.standard), form.medium)}
+                </span>
+              </div>
+
               <div>
                 <Label>Course Type *</Label>
                 <Select
@@ -657,7 +766,7 @@ export default function CoursesPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, price: e.target.value }))
                     }
-                    placeholder="2999"
+                    placeholder="50"
                     className="mt-1"
                     data-ocid="admin.course_price.input"
                   />
