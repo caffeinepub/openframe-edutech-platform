@@ -407,25 +407,37 @@ export default function FEDashboard() {
             </p>
           </div>
           <div className="flex gap-4 text-sm">
-            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
-              <span className="text-xs text-muted-foreground mb-0.5">
+            {/* Basic box */}
+            <div className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg px-4 py-2">
+              <span className="text-xs font-medium text-foreground mb-0.5">
                 Basic
+              </span>
+              <span className="text-xs text-muted-foreground mb-1">
+                \u20b950/student
               </span>
               <span className="font-semibold text-foreground">
                 \u20b9{stats.earnedBasic.toLocaleString("en-IN")}
               </span>
             </div>
-            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
-              <span className="text-xs text-muted-foreground mb-0.5">
+            {/* Standard box */}
+            <div className="flex flex-col items-center bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+              <span className="text-xs font-medium text-foreground mb-0.5">
                 Standard
+              </span>
+              <span className="text-xs text-blue-500 mb-1">
+                \u20b9100/student
               </span>
               <span className="font-semibold text-foreground">
                 \u20b9{stats.earnedStandard.toLocaleString("en-IN")}
               </span>
             </div>
-            <div className="flex flex-col items-center bg-muted/30 rounded-lg px-4 py-2">
-              <span className="text-xs text-muted-foreground mb-0.5">
+            {/* Premium box */}
+            <div className="flex flex-col items-center bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+              <span className="text-xs font-medium text-foreground mb-0.5">
                 Premium
+              </span>
+              <span className="text-xs text-purple-500 mb-1">
+                \u20b9150/student
               </span>
               <span className="font-semibold text-foreground">
                 \u20b9{stats.earnedPremium.toLocaleString("en-IN")}
