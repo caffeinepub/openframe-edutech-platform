@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { AppProvider } from "./context/AppContext";
-import { seedIfNeeded } from "./lib/storage";
+import { seedIfNeeded, seedSalaryData } from "./lib/storage";
 import { routeTree } from "./routeTree";
 
 // Seed data on startup
 seedIfNeeded();
+seedSalaryData();
 
 const router = createRouter({ routeTree });
 

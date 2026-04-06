@@ -17,18 +17,23 @@ export interface FieldExecutive {
   totalWorkHours: number;
   performanceScore: number;
   rank: "Gold" | "Silver" | "Bronze" | "Unranked";
+  // v4 salary fields
+  fixedSalary: number;
+  incentivePerRegistration: number;
+  bonusEarned: number;
+  totalEarnings: number;
 }
 
 export interface Course {
   id: number;
-  title: string; // auto-generated e.g. "5th Standard – English"
-  standard: number; // 1–12
+  title: string;
+  standard: number;
   medium: "English" | "Kannada";
-  courseType: "Basic" | "Standard" | "Premium"; // legacy badge usage
+  courseType: "Basic" | "Standard" | "Premium";
   description: string;
   videoUrl: string;
   notes: string;
-  price: number; // legacy field; fee plan drives registration price
+  price: number;
   passingScore: number;
   isActive: boolean;
   createdAt: string;
@@ -38,7 +43,7 @@ export interface ExamQuestion {
   id: number;
   courseId: number;
   question: string;
-  options: string[]; // 4 options
+  options: string[];
   correctIndex: number;
 }
 
@@ -52,7 +57,7 @@ export interface Registration {
   courseId: number;
   courseName: string;
   courseType: string;
-  medium: string; // "English" or "Kannada"
+  medium: string;
   feePlan: "Basic" | "Standard" | "Premium";
   price: number;
   status: "Pending" | "Approved" | "Rejected";
@@ -61,7 +66,6 @@ export interface Registration {
   schedule: string;
   createdAt: string;
   updatedAt: string;
-  // v3 additions
   latitude: number | null;
   longitude: number | null;
   locationAddress: string | null;
@@ -94,7 +98,7 @@ export interface Certificate {
   courseId: number;
   studentName: string;
   courseName: string;
-  certNumber: string; // "CERT-2024-00001"
+  certNumber: string;
   issuedAt: string;
 }
 
@@ -109,7 +113,7 @@ export interface Notification {
 
 export interface AuthSession {
   role: "admin" | "fe" | "student";
-  id?: number; // FE or student id
+  id?: number;
   name: string;
   phone?: string;
   feCode?: string;
@@ -119,18 +123,62 @@ export interface TimeLog {
   id: number;
   feId: number;
   feName: string;
-  date: string; // "2024-04-06"
+  date: string;
   loginTime: string | null;
   logoutTime: string | null;
-  workHours: number; // decimal hours
+  workHours: number;
   breakMinutes: number;
-  isLate: boolean; // login after 9:30 AM
+  isLate: boolean;
 }
 
 export interface ActivityLog {
   id: number;
   feId: number;
   action: string;
-  timestamp: string; // ISO
+  timestamp: string;
   details: string;
+}
+
+// ---- Salary & Incentive System ----
+
+export interface BonusSlab {
+  minRegistrations: number;
+  maxRegistrations: number | null; // null = unlimited
+  bonusPerRegistration: number;
+}
+
+export interface DeductionConfig {
+  absentDeductionPerDay: number;
+  lowHoursThreshold: number;
+  lowHoursDeductionPerDay: number;
+  penaltyPerUnmetTarget: number;
+}
+
+export interface SalaryConfig {
+  feId: number;
+  fixedSalary: number;
+  incentivePerRegistration: number;
+  bonusSlabs: BonusSlab[];
+  top1Bonus: number;
+  top2Bonus: number;
+  top3Bonus: number;
+}
+
+export interface SalaryRecord {
+  id: number;
+  feId: number;
+  feName: string;
+  feCode: string;
+  month: string; // "2026-04"
+  totalRegistrations: number;
+  totalPaidRegistrations: number;
+  fixedSalary: number;
+  incentiveAmount: number;
+  bonusAmount: number;
+  top3BonusAmount: number;
+  attendanceDeduction: number;
+  penaltyAmount: number;
+  finalSalary: number;
+  paymentStatus: "Pending" | "Approved" | "Paid";
+  generatedAt: string;
 }

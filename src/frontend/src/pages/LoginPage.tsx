@@ -162,6 +162,10 @@ export default function LoginPage() {
       totalWorkHours: 0,
       performanceScore: 0,
       rank: "Unranked",
+      fixedSalary: 0,
+      incentivePerRegistration: 0,
+      bonusEarned: 0,
+      totalEarnings: 0,
     };
     db.saveFEs([...allFEs, newFE]);
 

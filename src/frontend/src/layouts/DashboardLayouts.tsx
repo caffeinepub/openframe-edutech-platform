@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Clock,
   GraduationCap,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/admin/targets", label: "Targets", icon: Target },
   { href: "/admin/attendance", label: "Attendance", icon: Clock },
   { href: "/admin/map", label: "Map View", icon: MapPin },
+  { href: "/admin/payroll", label: "Payroll", icon: IndianRupee },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -53,7 +55,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const SidebarContent = () => (
     <>
-      {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-sidebar-border">
         <div className="w-8 h-8 teal-gradient rounded-lg flex items-center justify-center flex-shrink-0">
           <GraduationCap className="h-4 w-4 text-white" />
@@ -70,7 +71,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-0.5 px-2">
           {navItems.map(({ href, label, icon: Icon }) => {
@@ -99,7 +99,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </ul>
       </nav>
 
-      {/* User */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
@@ -130,12 +129,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-56 sidebar-gradient flex-shrink-0">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -171,9 +168,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Top Bar */}
         <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-border">
           <button
             type="button"
@@ -193,8 +188,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <LogOut className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
-
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -216,6 +209,7 @@ const feNavItems = [
   { href: "/fe/register-student", label: "Register Student", icon: Users },
   { href: "/fe/my-students", label: "My Students", icon: ClipboardList },
   { href: "/fe/performance", label: "Performance", icon: TrendingUp },
+  { href: "/fe/salary", label: "My Salary", icon: IndianRupee },
   { href: "/fe/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -363,7 +357,7 @@ export function FELayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Student Layout (simple top nav)
+// Student Layout
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   const { session, logout } = useApp();
   const router = useRouterState();
@@ -383,7 +377,6 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Nav */}
       <header className="sticky top-0 z-40 bg-white border-b border-border shadow-xs">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex items-center h-14 gap-6">

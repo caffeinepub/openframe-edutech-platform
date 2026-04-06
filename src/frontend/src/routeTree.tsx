@@ -15,10 +15,12 @@ import CoursesPage from "./pages/admin/CoursesPage";
 import FieldExecutivesPage from "./pages/admin/FieldExecutivesPage";
 import LeaderboardPage from "./pages/admin/LeaderboardPage";
 import MapPage from "./pages/admin/MapPage";
+import PayrollPage from "./pages/admin/PayrollPage";
 import RegistrationsPage from "./pages/admin/RegistrationsPage";
 import TargetsPage from "./pages/admin/TargetsPage";
 import FEDashboard from "./pages/fe/FEDashboard";
 import FENotificationsPage from "./pages/fe/FENotificationsPage";
+import MySalaryPage from "./pages/fe/MySalaryPage";
 import MyStudentsPage from "./pages/fe/MyStudentsPage";
 import PerformancePage from "./pages/fe/PerformancePage";
 import RegisterStudentPage from "./pages/fe/RegisterStudentPage";
@@ -27,12 +29,10 @@ import StudentCertificatePage from "./pages/student/StudentCertificatePage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
 
-// Root route
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-// Public routes
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -45,7 +45,6 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-// Admin layout route
 const adminLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-layout",
@@ -122,7 +121,12 @@ const adminMapRoute = createRoute({
   component: MapPage,
 });
 
-// FE layout route
+const adminPayrollRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/payroll",
+  component: PayrollPage,
+});
+
 const feLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "fe-layout",
@@ -163,7 +167,12 @@ const fePerformanceRoute = createRoute({
   component: PerformancePage,
 });
 
-// Student layout route
+const feSalaryRoute = createRoute({
+  getParentRoute: () => feLayoutRoute,
+  path: "/fe/salary",
+  component: MySalaryPage,
+});
+
 const studentLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "student-layout",
@@ -213,6 +222,7 @@ export const routeTree = rootRoute.addChildren([
     adminTargetsRoute,
     adminAttendanceRoute,
     adminMapRoute,
+    adminPayrollRoute,
   ]),
   feLayoutRoute.addChildren([
     feDashboardRoute,
@@ -220,6 +230,7 @@ export const routeTree = rootRoute.addChildren([
     feStudentsRoute,
     feNotificationsRoute,
     fePerformanceRoute,
+    feSalaryRoute,
   ]),
   studentLayoutRoute.addChildren([
     studentDashboardRoute,

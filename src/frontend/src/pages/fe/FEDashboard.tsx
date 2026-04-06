@@ -7,6 +7,7 @@ import {
   LogIn,
   LogOut,
   Medal,
+  Sparkles,
   Target,
   TrendingUp,
   Trophy,
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useApp } from "../../context/AppContext";
+import { computeTodayEarnings } from "../../lib/salaryCalc";
 import { db } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
 
@@ -39,6 +41,8 @@ export default function FEDashboard() {
     earnedPremium: 0,
     weekCount: 0,
     monthCount: 0,
+    todayIncentive: 0,
+    todayPaidRegs: 0,
   });
 
   const loadData = useCallback(() => {
@@ -76,6 +80,11 @@ export default function FEDashboard() {
       (r) => new Date(r.createdAt) >= monthAgo,
     ).length;
 
+    // Today's salary incentive
+    const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
+      session.id,
+    );
+
     // Today's time log
     const todayStr = new Date().toISOString().split("T")[0];
     const logs = db.getTimeLogs();
@@ -96,9 +105,11 @@ export default function FEDashboard() {
       earnedPremium,
       weekCount,
       monthCount,
+      todayIncentive,
+      todayPaidRegs: todayPaidRegistrations,
     });
 
-    // Auto-alerts (only once per session)
+    // Auto-alerts
     if (!alertShownRef.current && fe) {
       const currentHour = new Date().getHours();
       if (todayCount >= (fe.dailyTarget ?? 5)) {
@@ -120,7 +131,6 @@ export default function FEDashboard() {
     loadData();
   }, [loadData]);
 
-  // Elapsed time ticker
   useEffect(() => {
     if (!todayLog?.loginTime || todayLog.logoutTime) return;
     const updateElapsed = () => {
@@ -228,7 +238,7 @@ export default function FEDashboard() {
 
       {/* Stats */}
       <div
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-5 gap-4"
         data-ocid="fe.dashboard.section"
       >
         <StatCard
@@ -263,11 +273,18 @@ export default function FEDashboard() {
           color="orange"
           data-ocid="fe.pending_students.card"
         />
+        <StatCard
+          title="Today's Incentive"
+          value={`\u20b9${stats.todayIncentive}`}
+          icon={Sparkles}
+          subtitle={`${stats.todayPaidRegs} paid today`}
+          color="green"
+          data-ocid="fe.today_incentive.card"
+        />
       </div>
 
       {/* Performance Score + Clock In/Out */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Performance Score */}
         <div
           className="bg-white rounded-xl border border-border shadow-card p-5"
           data-ocid="fe.performance.card"
@@ -303,7 +320,6 @@ export default function FEDashboard() {
           </div>
         </div>
 
-        {/* Clock In/Out */}
         <div
           className="bg-white rounded-xl border border-border shadow-card p-5"
           data-ocid="fe.clock.card"
@@ -363,10 +379,7 @@ export default function FEDashboard() {
                   <span className="font-semibold">
                     {new Date(todayLog.loginTime as string).toLocaleTimeString(
                       "en-IN",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      },
+                      { hour: "2-digit", minute: "2-digit" },
                     )}
                   </span>
                 </p>
@@ -407,7 +420,6 @@ export default function FEDashboard() {
             </p>
           </div>
           <div className="flex gap-4 text-sm">
-            {/* Basic box */}
             <div className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg px-4 py-2">
               <span className="text-xs font-medium text-foreground mb-0.5">
                 Basic
@@ -419,7 +431,6 @@ export default function FEDashboard() {
                 \u20b9{stats.earnedBasic.toLocaleString("en-IN")}
               </span>
             </div>
-            {/* Standard box */}
             <div className="flex flex-col items-center bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
               <span className="text-xs font-medium text-foreground mb-0.5">
                 Standard
@@ -431,7 +442,6 @@ export default function FEDashboard() {
                 \u20b9{stats.earnedStandard.toLocaleString("en-IN")}
               </span>
             </div>
-            {/* Premium box */}
             <div className="flex flex-col items-center bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
               <span className="text-xs font-medium text-foreground mb-0.5">
                 Premium
@@ -456,8 +466,6 @@ export default function FEDashboard() {
           <Target className="h-4 w-4 text-primary" />
           <h3 className="font-semibold text-foreground">Target Progress</h3>
         </div>
-
-        {/* Daily */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-medium text-foreground">Daily</span>
@@ -472,8 +480,6 @@ export default function FEDashboard() {
               : `${dailyTarget - stats.today} more to reach daily target`}
           </p>
         </div>
-
-        {/* Weekly */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-medium text-foreground">Weekly</span>
@@ -488,8 +494,6 @@ export default function FEDashboard() {
               : `${weeklyTarget - stats.weekCount} more for weekly target`}
           </p>
         </div>
-
-        {/* Monthly */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-medium text-foreground">Monthly</span>
@@ -573,13 +577,7 @@ export default function FEDashboard() {
                     </td>
                     <td className="p-4">
                       <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          r.feePlan === "Premium"
-                            ? "bg-purple-100 text-purple-700"
-                            : r.feePlan === "Standard"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-600"
-                        }`}
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.feePlan === "Premium" ? "bg-purple-100 text-purple-700" : r.feePlan === "Standard" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}
                       >
                         {r.feePlan}
                       </span>

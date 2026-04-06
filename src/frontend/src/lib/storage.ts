@@ -1,12 +1,16 @@
 import type {
   ActivityLog,
+  BonusSlab,
   Certificate,
   Course,
+  DeductionConfig,
   ExamAttempt,
   ExamQuestion,
   FieldExecutive,
   Notification,
   Registration,
+  SalaryConfig,
+  SalaryRecord,
   Student,
   TimeLog,
 } from "../types/models";
@@ -25,6 +29,10 @@ const KEYS = {
   MIGRATED_V1: "openframe_migrated_v1",
   TIME_LOGS: "openframe_time_logs",
   ACTIVITY_LOGS: "openframe_activity_logs",
+  SALARY_CONFIGS: "openframe_salary_configs",
+  SALARY_RECORDS: "openframe_salary_records",
+  DEDUCTION_CONFIG: "openframe_deduction_config",
+  SEEDED_V4: "openframe_seeded_v4",
 };
 
 function getItem<T>(key: string): T[] {
@@ -40,7 +48,7 @@ function setItem<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
-// ---- MIGRATION: reset fake placeholder principals ----
+// ---- MIGRATION ----
 function migrateV1(): void {
   if (localStorage.getItem(KEYS.MIGRATED_V1)) return;
   const fes = getItem<FieldExecutive>(KEYS.FES);
@@ -75,12 +83,10 @@ function makeCourseTitle(
 
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
-  // Always run migration first, even if already seeded
   migrateV1();
 
   if (localStorage.getItem(KEYS.SEEDED)) return;
 
-  // Build 24 courses: 12 English (IDs 1–12) + 12 Kannada (IDs 13–24)
   const courses: Course[] = [
     ...Array.from({ length: 12 }, (_, i) => ({
       id: i + 1,
@@ -113,7 +119,6 @@ export function seedIfNeeded(): void {
   ];
 
   const questions: ExamQuestion[] = [
-    // Course 1 – 1st Standard English
     {
       id: 1,
       courseId: 1,
@@ -149,7 +154,6 @@ export function seedIfNeeded(): void {
       options: ["Green", "Red", "Yellow", "Blue"],
       correctIndex: 3,
     },
-    // Course 2 – 2nd Standard English
     {
       id: 6,
       courseId: 2,
@@ -204,6 +208,10 @@ export function seedIfNeeded(): void {
       totalWorkHours: 8,
       performanceScore: 72,
       rank: "Gold",
+      fixedSalary: 8000,
+      incentivePerRegistration: 100,
+      bonusEarned: 0,
+      totalEarnings: 0,
     },
     {
       id: 2,
@@ -221,6 +229,10 @@ export function seedIfNeeded(): void {
       totalWorkHours: 6,
       performanceScore: 55,
       rank: "Silver",
+      fixedSalary: 7000,
+      incentivePerRegistration: 80,
+      bonusEarned: 0,
+      totalEarnings: 0,
     },
   ];
 
@@ -370,7 +382,6 @@ export function seedIfNeeded(): void {
     },
   ];
 
-  // Sample time logs for both FEs (last 5 days)
   const today = new Date();
   const timeLogs: TimeLog[] = [];
   let tlId = 1;
@@ -378,9 +389,7 @@ export function seedIfNeeded(): void {
     const date = new Date(today);
     date.setDate(date.getDate() - d);
     const dateStr = date.toISOString().split("T")[0];
-
-    // FE 1 logs
-    const fe1LoginHour = d % 3 === 0 ? 10 : 9; // late on some days
+    const fe1LoginHour = d % 3 === 0 ? 10 : 9;
     const fe1LoginMin = d % 3 === 0 ? 5 : 15;
     const fe1Login = `${dateStr}T0${fe1LoginHour}:${fe1LoginMin}:00.000Z`;
     const fe1Logout = `${dateStr}T17:30:00.000Z`;
@@ -396,8 +405,6 @@ export function seedIfNeeded(): void {
       breakMinutes: 30,
       isLate: fe1LoginHour >= 10 || (fe1LoginHour === 9 && fe1LoginMin > 30),
     });
-
-    // FE 2 logs
     const fe2LoginHour = d % 2 === 0 ? 10 : 9;
     const fe2LoginMin = d % 2 === 0 ? 45 : 20;
     const fe2Login = `${dateStr}T0${fe2LoginHour}:${fe2LoginMin}:00.000Z`;
@@ -429,57 +436,149 @@ export function seedIfNeeded(): void {
   localStorage.setItem(KEYS.SEEDED, "true");
 }
 
+// ---- SALARY SEED ----
+const DEFAULT_BONUS_SLABS: BonusSlab[] = [
+  { minRegistrations: 0, maxRegistrations: 50, bonusPerRegistration: 0 },
+  { minRegistrations: 51, maxRegistrations: 100, bonusPerRegistration: 10 },
+  { minRegistrations: 101, maxRegistrations: 200, bonusPerRegistration: 20 },
+  { minRegistrations: 201, maxRegistrations: null, bonusPerRegistration: 30 },
+];
+
+export function seedSalaryData(): void {
+  if (localStorage.getItem(KEYS.SEEDED_V4)) {
+    // Still migrate salary fields onto FEs if missing
+    const fes = getItem<FieldExecutive>(KEYS.FES);
+    let changed = false;
+    const updated = fes.map((fe) => {
+      if (fe.fixedSalary === undefined || fe.fixedSalary === null) {
+        changed = true;
+        return {
+          ...fe,
+          fixedSalary: fe.id === 1 ? 8000 : 7000,
+          incentivePerRegistration: fe.id === 1 ? 100 : 80,
+          bonusEarned: 0,
+          totalEarnings: 0,
+        };
+      }
+      return fe;
+    });
+    if (changed) setItem(KEYS.FES, updated);
+    return;
+  }
+
+  // Merge salary fields onto existing FEs
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  const updatedFEs = fes.map((fe) => ({
+    ...fe,
+    fixedSalary: fe.fixedSalary ?? (fe.id === 1 ? 8000 : 7000),
+    incentivePerRegistration:
+      fe.incentivePerRegistration ?? (fe.id === 1 ? 100 : 80),
+    bonusEarned: fe.bonusEarned ?? 0,
+    totalEarnings: fe.totalEarnings ?? 0,
+  }));
+  setItem(KEYS.FES, updatedFEs);
+
+  const configs: SalaryConfig[] = [
+    {
+      feId: 1,
+      fixedSalary: 8000,
+      incentivePerRegistration: 100,
+      bonusSlabs: DEFAULT_BONUS_SLABS,
+      top1Bonus: 500,
+      top2Bonus: 300,
+      top3Bonus: 200,
+    },
+    {
+      feId: 2,
+      fixedSalary: 7000,
+      incentivePerRegistration: 80,
+      bonusSlabs: DEFAULT_BONUS_SLABS,
+      top1Bonus: 500,
+      top2Bonus: 300,
+      top3Bonus: 200,
+    },
+  ];
+
+  const deductionConfig: DeductionConfig = {
+    absentDeductionPerDay: 300,
+    lowHoursThreshold: 4,
+    lowHoursDeductionPerDay: 150,
+    penaltyPerUnmetTarget: 500,
+  };
+
+  setItem(KEYS.SALARY_CONFIGS, configs);
+  localStorage.setItem(KEYS.DEDUCTION_CONFIG, JSON.stringify(deductionConfig));
+  setItem(KEYS.SALARY_RECORDS, []);
+  localStorage.setItem(KEYS.SEEDED_V4, "true");
+}
+
 // ---- CRUD HELPERS ----
 export const db = {
-  // Field Executives
   getFEs: (): FieldExecutive[] => getItem<FieldExecutive>(KEYS.FES),
   saveFEs: (fes: FieldExecutive[]) => setItem(KEYS.FES, fes),
 
-  // Courses
   getCourses: (): Course[] => getItem<Course>(KEYS.COURSES),
   saveCourses: (courses: Course[]) => setItem(KEYS.COURSES, courses),
 
-  // Questions
   getQuestions: (): ExamQuestion[] => getItem<ExamQuestion>(KEYS.QUESTIONS),
   saveQuestions: (questions: ExamQuestion[]) =>
     setItem(KEYS.QUESTIONS, questions),
 
-  // Registrations
   getRegistrations: (): Registration[] =>
     getItem<Registration>(KEYS.REGISTRATIONS),
   saveRegistrations: (regs: Registration[]) =>
     setItem(KEYS.REGISTRATIONS, regs),
 
-  // Students
   getStudents: (): Student[] => getItem<Student>(KEYS.STUDENTS),
   saveStudents: (students: Student[]) => setItem(KEYS.STUDENTS, students),
 
-  // Exam Attempts
   getExamAttempts: (): ExamAttempt[] =>
     getItem<ExamAttempt>(KEYS.EXAM_ATTEMPTS),
   saveExamAttempts: (attempts: ExamAttempt[]) =>
     setItem(KEYS.EXAM_ATTEMPTS, attempts),
 
-  // Certificates
   getCertificates: (): Certificate[] => getItem<Certificate>(KEYS.CERTIFICATES),
   saveCertificates: (certs: Certificate[]) => setItem(KEYS.CERTIFICATES, certs),
 
-  // Notifications
   getNotifications: (): Notification[] =>
     getItem<Notification>(KEYS.NOTIFICATIONS),
   saveNotifications: (notifs: Notification[]) =>
     setItem(KEYS.NOTIFICATIONS, notifs),
 
-  // Time Logs
   getTimeLogs: (): TimeLog[] => getItem<TimeLog>(KEYS.TIME_LOGS),
   saveTimeLogs: (logs: TimeLog[]) => setItem(KEYS.TIME_LOGS, logs),
 
-  // Activity Logs
   getActivityLogs: (): ActivityLog[] =>
     getItem<ActivityLog>(KEYS.ACTIVITY_LOGS),
   saveActivityLogs: (logs: ActivityLog[]) => setItem(KEYS.ACTIVITY_LOGS, logs),
 
-  // Session
+  getSalaryConfigs: (): SalaryConfig[] =>
+    getItem<SalaryConfig>(KEYS.SALARY_CONFIGS),
+  saveSalaryConfigs: (configs: SalaryConfig[]) =>
+    setItem(KEYS.SALARY_CONFIGS, configs),
+
+  getSalaryRecords: (): SalaryRecord[] =>
+    getItem<SalaryRecord>(KEYS.SALARY_RECORDS),
+  saveSalaryRecords: (records: SalaryRecord[]) =>
+    setItem(KEYS.SALARY_RECORDS, records),
+
+  getDeductionConfig: (): DeductionConfig => {
+    try {
+      const raw = localStorage.getItem(KEYS.DEDUCTION_CONFIG);
+      if (raw) return JSON.parse(raw) as DeductionConfig;
+    } catch {
+      /* ignore */
+    }
+    return {
+      absentDeductionPerDay: 300,
+      lowHoursThreshold: 4,
+      lowHoursDeductionPerDay: 150,
+      penaltyPerUnmetTarget: 500,
+    };
+  },
+  saveDeductionConfig: (config: DeductionConfig) =>
+    localStorage.setItem(KEYS.DEDUCTION_CONFIG, JSON.stringify(config)),
+
   getSession: () => {
     try {
       const raw = localStorage.getItem(KEYS.SESSION);
@@ -492,7 +591,6 @@ export const db = {
     localStorage.setItem(KEYS.SESSION, JSON.stringify(session)),
   clearSession: () => localStorage.removeItem(KEYS.SESSION),
 
-  // Helpers: get next id
   nextId: (items: { id: number }[]): number =>
     items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1,
 };
