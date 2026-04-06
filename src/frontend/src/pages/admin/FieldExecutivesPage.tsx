@@ -88,7 +88,7 @@ export default function FieldExecutivesPage() {
         feCode,
         name: form.name.trim(),
         phone: form.phone.trim(),
-        principal: `fe-principal-${Date.now()}`,
+        principal: "",
         createdAt: new Date().toISOString(),
         isActive: true,
       };

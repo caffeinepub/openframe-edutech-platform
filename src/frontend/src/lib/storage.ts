@@ -20,6 +20,7 @@ const KEYS = {
   NOTIFICATIONS: "openframe_notifications",
   SEEDED: "openframe_seeded",
   SESSION: "openframe_session",
+  MIGRATED_V1: "openframe_migrated_v1",
 };
 
 function getItem<T>(key: string): T[] {
@@ -35,8 +36,22 @@ function setItem<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+// ---- MIGRATION: reset fake placeholder principals ----
+function migrateV1(): void {
+  if (localStorage.getItem(KEYS.MIGRATED_V1)) return;
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  const migrated = fes.map((fe) =>
+    fe.principal.startsWith("fe-principal-") ? { ...fe, principal: "" } : fe,
+  );
+  setItem(KEYS.FES, migrated);
+  localStorage.setItem(KEYS.MIGRATED_V1, "true");
+}
+
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
+  // Always run migration first, even if already seeded
+  migrateV1();
+
   if (localStorage.getItem(KEYS.SEEDED)) return;
 
   const courses: Course[] = [
@@ -255,7 +270,7 @@ export function seedIfNeeded(): void {
       feCode: "FE001",
       name: "Rahul Sharma",
       phone: "9876543210",
-      principal: "fe-principal-001",
+      principal: "",
       createdAt: "2024-02-01T09:00:00.000Z",
       isActive: true,
     },
@@ -264,7 +279,7 @@ export function seedIfNeeded(): void {
       feCode: "FE002",
       name: "Priya Singh",
       phone: "9876543211",
-      principal: "fe-principal-002",
+      principal: "",
       createdAt: "2024-02-05T09:00:00.000Z",
       isActive: true,
     },
