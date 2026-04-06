@@ -8,6 +8,15 @@ export interface FieldExecutive {
   principal: string; // mock II principal
   createdAt: string;
   isActive: boolean;
+  // v3 additions
+  dailyTarget: number;
+  weeklyTarget: number;
+  monthlyTarget: number;
+  loginTime: string | null;
+  logoutTime: string | null;
+  totalWorkHours: number;
+  performanceScore: number;
+  rank: "Gold" | "Silver" | "Bronze" | "Unranked";
 }
 
 export interface Course {
@@ -52,6 +61,10 @@ export interface Registration {
   schedule: string;
   createdAt: string;
   updatedAt: string;
+  // v3 additions
+  latitude: number | null;
+  longitude: number | null;
+  locationAddress: string | null;
 }
 
 export interface Student {
@@ -100,4 +113,24 @@ export interface AuthSession {
   name: string;
   phone?: string;
   feCode?: string;
+}
+
+export interface TimeLog {
+  id: number;
+  feId: number;
+  feName: string;
+  date: string; // "2024-04-06"
+  loginTime: string | null;
+  logoutTime: string | null;
+  workHours: number; // decimal hours
+  breakMinutes: number;
+  isLate: boolean; // login after 9:30 AM
+}
+
+export interface ActivityLog {
+  id: number;
+  feId: number;
+  action: string;
+  timestamp: string; // ISO
+  details: string;
 }

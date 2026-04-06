@@ -154,6 +154,14 @@ export default function LoginPage() {
       principal: principalStr,
       createdAt: new Date().toISOString(),
       isActive: true,
+      dailyTarget: 5,
+      weeklyTarget: 25,
+      monthlyTarget: 100,
+      loginTime: null,
+      logoutTime: null,
+      totalWorkHours: 0,
+      performanceScore: 0,
+      rank: "Unranked",
     };
     db.saveFEs([...allFEs, newFE]);
 

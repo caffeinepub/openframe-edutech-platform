@@ -8,14 +8,19 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
+import AnalyticsPage from "./pages/admin/AnalyticsPage";
+import AttendancePage from "./pages/admin/AttendancePage";
 import CertificatesPage from "./pages/admin/CertificatesPage";
 import CoursesPage from "./pages/admin/CoursesPage";
 import FieldExecutivesPage from "./pages/admin/FieldExecutivesPage";
 import LeaderboardPage from "./pages/admin/LeaderboardPage";
+import MapPage from "./pages/admin/MapPage";
 import RegistrationsPage from "./pages/admin/RegistrationsPage";
+import TargetsPage from "./pages/admin/TargetsPage";
 import FEDashboard from "./pages/fe/FEDashboard";
 import FENotificationsPage from "./pages/fe/FENotificationsPage";
 import MyStudentsPage from "./pages/fe/MyStudentsPage";
+import PerformancePage from "./pages/fe/PerformancePage";
 import RegisterStudentPage from "./pages/fe/RegisterStudentPage";
 import ExamPage from "./pages/student/ExamPage";
 import StudentCertificatePage from "./pages/student/StudentCertificatePage";
@@ -93,6 +98,30 @@ const adminNotificationsRoute = createRoute({
   component: AdminNotificationsPage,
 });
 
+const adminAnalyticsRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/analytics",
+  component: AnalyticsPage,
+});
+
+const adminTargetsRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/targets",
+  component: TargetsPage,
+});
+
+const adminAttendanceRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/attendance",
+  component: AttendancePage,
+});
+
+const adminMapRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/map",
+  component: MapPage,
+});
+
 // FE layout route
 const feLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -126,6 +155,12 @@ const feNotificationsRoute = createRoute({
   getParentRoute: () => feLayoutRoute,
   path: "/fe/notifications",
   component: FENotificationsPage,
+});
+
+const fePerformanceRoute = createRoute({
+  getParentRoute: () => feLayoutRoute,
+  path: "/fe/performance",
+  component: PerformancePage,
 });
 
 // Student layout route
@@ -174,12 +209,17 @@ export const routeTree = rootRoute.addChildren([
     adminCertificatesRoute,
     adminLeaderboardRoute,
     adminNotificationsRoute,
+    adminAnalyticsRoute,
+    adminTargetsRoute,
+    adminAttendanceRoute,
+    adminMapRoute,
   ]),
   feLayoutRoute.addChildren([
     feDashboardRoute,
     feRegisterRoute,
     feStudentsRoute,
     feNotificationsRoute,
+    fePerformanceRoute,
   ]),
   studentLayoutRoute.addChildren([
     studentDashboardRoute,

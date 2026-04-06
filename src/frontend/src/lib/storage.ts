@@ -1,4 +1,5 @@
 import type {
+  ActivityLog,
   Certificate,
   Course,
   ExamAttempt,
@@ -7,6 +8,7 @@ import type {
   Notification,
   Registration,
   Student,
+  TimeLog,
 } from "../types/models";
 
 const KEYS = {
@@ -18,9 +20,11 @@ const KEYS = {
   EXAM_ATTEMPTS: "openframe_exam_attempts",
   CERTIFICATES: "openframe_certificates",
   NOTIFICATIONS: "openframe_notifications",
-  SEEDED: "openframe_seeded_v2",
+  SEEDED: "openframe_seeded_v3",
   SESSION: "openframe_session",
   MIGRATED_V1: "openframe_migrated_v1",
+  TIME_LOGS: "openframe_time_logs",
+  ACTIVITY_LOGS: "openframe_activity_logs",
 };
 
 function getItem<T>(key: string): T[] {
@@ -192,6 +196,14 @@ export function seedIfNeeded(): void {
       principal: "",
       createdAt: "2024-02-01T09:00:00.000Z",
       isActive: true,
+      dailyTarget: 5,
+      weeklyTarget: 25,
+      monthlyTarget: 100,
+      loginTime: null,
+      logoutTime: null,
+      totalWorkHours: 8,
+      performanceScore: 72,
+      rank: "Gold",
     },
     {
       id: 2,
@@ -201,6 +213,14 @@ export function seedIfNeeded(): void {
       principal: "",
       createdAt: "2024-02-05T09:00:00.000Z",
       isActive: true,
+      dailyTarget: 5,
+      weeklyTarget: 25,
+      monthlyTarget: 100,
+      loginTime: null,
+      logoutTime: null,
+      totalWorkHours: 6,
+      performanceScore: 55,
+      rank: "Silver",
     },
   ];
 
@@ -251,6 +271,9 @@ export function seedIfNeeded(): void {
       schedule: "Mon, Wed, Fri \u2014 7:00 PM to 9:00 PM IST",
       createdAt: "2024-03-01T10:00:00.000Z",
       updatedAt: "2024-03-03T14:00:00.000Z",
+      latitude: 12.9716,
+      longitude: 77.5946,
+      locationAddress: "Bangalore, Karnataka",
     },
     {
       id: 2,
@@ -271,6 +294,9 @@ export function seedIfNeeded(): void {
       schedule: "",
       createdAt: "2024-03-05T11:00:00.000Z",
       updatedAt: "2024-03-06T10:00:00.000Z",
+      latitude: 12.9352,
+      longitude: 77.6244,
+      locationAddress: "Koramangala, Bangalore",
     },
     {
       id: 3,
@@ -291,6 +317,9 @@ export function seedIfNeeded(): void {
       schedule: "",
       createdAt: "2024-03-10T12:00:00.000Z",
       updatedAt: "2024-03-10T12:00:00.000Z",
+      latitude: 13.0068,
+      longitude: 77.5864,
+      locationAddress: "Hebbal, Bangalore",
     },
   ];
 
@@ -341,6 +370,52 @@ export function seedIfNeeded(): void {
     },
   ];
 
+  // Sample time logs for both FEs (last 5 days)
+  const today = new Date();
+  const timeLogs: TimeLog[] = [];
+  let tlId = 1;
+  for (let d = 4; d >= 0; d--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - d);
+    const dateStr = date.toISOString().split("T")[0];
+
+    // FE 1 logs
+    const fe1LoginHour = d % 3 === 0 ? 10 : 9; // late on some days
+    const fe1LoginMin = d % 3 === 0 ? 5 : 15;
+    const fe1Login = `${dateStr}T0${fe1LoginHour}:${fe1LoginMin}:00.000Z`;
+    const fe1Logout = `${dateStr}T17:30:00.000Z`;
+    const fe1Hours = 17.5 - fe1LoginHour - fe1LoginMin / 60;
+    timeLogs.push({
+      id: tlId++,
+      feId: 1,
+      feName: "Rahul Sharma",
+      date: dateStr,
+      loginTime: fe1Login,
+      logoutTime: fe1Logout,
+      workHours: Math.round(fe1Hours * 10) / 10,
+      breakMinutes: 30,
+      isLate: fe1LoginHour >= 10 || (fe1LoginHour === 9 && fe1LoginMin > 30),
+    });
+
+    // FE 2 logs
+    const fe2LoginHour = d % 2 === 0 ? 10 : 9;
+    const fe2LoginMin = d % 2 === 0 ? 45 : 20;
+    const fe2Login = `${dateStr}T0${fe2LoginHour}:${fe2LoginMin}:00.000Z`;
+    const fe2Logout = `${dateStr}T16:45:00.000Z`;
+    const fe2Hours = 16.75 - fe2LoginHour - fe2LoginMin / 60;
+    timeLogs.push({
+      id: tlId++,
+      feId: 2,
+      feName: "Priya Singh",
+      date: dateStr,
+      loginTime: fe2Login,
+      logoutTime: fe2Logout,
+      workHours: Math.round(fe2Hours * 10) / 10,
+      breakMinutes: 45,
+      isLate: fe2LoginHour >= 10 || (fe2LoginHour === 9 && fe2LoginMin > 30),
+    });
+  }
+
   setItem(KEYS.COURSES, courses);
   setItem(KEYS.QUESTIONS, questions);
   setItem(KEYS.FES, fes);
@@ -349,6 +424,8 @@ export function seedIfNeeded(): void {
   setItem(KEYS.EXAM_ATTEMPTS, examAttempts);
   setItem(KEYS.CERTIFICATES, certificates);
   setItem(KEYS.NOTIFICATIONS, notifications);
+  setItem(KEYS.TIME_LOGS, timeLogs);
+  setItem(KEYS.ACTIVITY_LOGS, [] as ActivityLog[]);
   localStorage.setItem(KEYS.SEEDED, "true");
 }
 
@@ -392,6 +469,15 @@ export const db = {
     getItem<Notification>(KEYS.NOTIFICATIONS),
   saveNotifications: (notifs: Notification[]) =>
     setItem(KEYS.NOTIFICATIONS, notifs),
+
+  // Time Logs
+  getTimeLogs: (): TimeLog[] => getItem<TimeLog>(KEYS.TIME_LOGS),
+  saveTimeLogs: (logs: TimeLog[]) => setItem(KEYS.TIME_LOGS, logs),
+
+  // Activity Logs
+  getActivityLogs: (): ActivityLog[] =>
+    getItem<ActivityLog>(KEYS.ACTIVITY_LOGS),
+  saveActivityLogs: (logs: ActivityLog[]) => setItem(KEYS.ACTIVITY_LOGS, logs),
 
   // Session
   getSession: () => {

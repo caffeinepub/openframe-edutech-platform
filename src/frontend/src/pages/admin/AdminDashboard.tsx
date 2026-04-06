@@ -1,6 +1,8 @@
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
+  BarChart2,
   CheckCircle,
   ClipboardList,
   Clock,
@@ -16,6 +18,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -29,16 +33,6 @@ import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
 const COLORS = ["#0F7C86", "#1697A0", "#1F8FB5"];
-
-const weeklyData = [
-  { day: "Mon", registrations: 3 },
-  { day: "Tue", registrations: 5 },
-  { day: "Wed", registrations: 2 },
-  { day: "Thu", registrations: 7 },
-  { day: "Fri", registrations: 4 },
-  { day: "Sat", registrations: 6 },
-  { day: "Sun", registrations: 1 },
-];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -54,6 +48,9 @@ export default function AdminDashboard() {
   });
   const [courseDistribution, setCourseDistribution] = useState<
     { name: string; value: number }[]
+  >([]);
+  const [last7DaysData, setLast7DaysData] = useState<
+    { day: string; registrations: number }[]
   >([]);
 
   useEffect(() => {
@@ -88,6 +85,19 @@ export default function AdminDashboard() {
       value,
     }));
 
+    // Last 7 days real data
+    const days7: { day: string; registrations: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStr = d.toDateString();
+      const label = d.toLocaleDateString("en-IN", { weekday: "short" });
+      const count = registrations.filter(
+        (r) => new Date(r.createdAt).toDateString() === dayStr,
+      ).length;
+      days7.push({ day: label, registrations: count });
+    }
+
     setRegs(registrations.slice(0, 5));
     setStats({
       totalStudents: students.length,
@@ -99,16 +109,29 @@ export default function AdminDashboard() {
       rejected,
     });
     setCourseDistribution(dist);
+    setLast7DaysData(days7);
   }, []);
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Overview of OpenFrame platform performance
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Overview of OpenFrame platform performance
+          </p>
+        </div>
+        <Button
+          onClick={() => navigate({ to: "/admin/analytics" })}
+          className="gap-2 teal-gradient text-white border-0 w-fit"
+          data-ocid="admin.analytics.button"
+        >
+          <BarChart2 className="h-4 w-4" />
+          Full Analytics
+        </Button>
       </div>
 
       {/* Stats Grid */}
@@ -142,7 +165,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Total Revenue"
-          value={`₹${stats.revenue.toLocaleString("en-IN")}`}
+          value={`\u20b9${stats.revenue.toLocaleString("en-IN")}`}
           icon={IndianRupee}
           subtitle="Paid payments"
           color="purple"
@@ -177,6 +200,42 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Quick Analytics */}
+      <div className="bg-white rounded-xl border border-border shadow-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart2 className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-foreground">
+              Quick Analytics — Last 7 Days
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/admin/analytics" })}
+            className="text-xs text-primary font-medium hover:underline"
+            data-ocid="admin.analytics_link.button"
+          >
+            View full analytics →
+          </button>
+        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={last7DaysData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="registrations"
+              stroke="#0F7C86"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "#0F7C86" }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl p-5 border border-border shadow-card">
@@ -184,10 +243,10 @@ export default function AdminDashboard() {
             Weekly Registrations
           </h3>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={weeklyData}>
+            <BarChart data={last7DaysData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
               <Tooltip />
               <Bar
                 dataKey="registrations"

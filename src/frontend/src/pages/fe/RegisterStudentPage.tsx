@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "@tanstack/react-router";
-import { IndianRupee, Loader2, UserPlus } from "lucide-react";
+import { IndianRupee, Loader2, MapPin, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useApp } from "../../context/AppContext";
@@ -54,9 +54,52 @@ export default function RegisterStudentPage() {
     notes: "",
   });
   const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState<{
+    lat: number | null;
+    lng: number | null;
+    address: string | null;
+    status: "pending" | "captured" | "unavailable";
+  }>({
+    lat: null,
+    lng: null,
+    address: null,
+    status: "pending",
+  });
 
   useEffect(() => {
     setCourses(db.getCourses().filter((c) => c.isActive));
+
+    // Capture GPS location on mount
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setLocation({
+            lat,
+            lng,
+            address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+            status: "captured",
+          });
+        },
+        () => {
+          setLocation({
+            lat: null,
+            lng: null,
+            address: null,
+            status: "unavailable",
+          });
+        },
+        { timeout: 10000, enableHighAccuracy: true },
+      );
+    } else {
+      setLocation({
+        lat: null,
+        lng: null,
+        address: null,
+        status: "unavailable",
+      });
+    }
   }, []);
 
   // Derive the selected course from medium + standard
@@ -90,6 +133,17 @@ export default function RegisterStudentPage() {
       toast.error("Session error. Please log in again.");
       return;
     }
+
+    // Duplicate phone check
+    const allRegs = db.getRegistrations();
+    const duplicate = allRegs.find(
+      (r) => r.studentPhone.trim() === form.studentPhone.trim(),
+    );
+    if (duplicate) {
+      toast.error("\u26A0\uFE0F This phone number is already registered");
+      return;
+    }
+
     setLoading(true);
     await new Promise((r) => setTimeout(r, 500));
 
@@ -101,7 +155,6 @@ export default function RegisterStudentPage() {
       return;
     }
 
-    const allRegs = db.getRegistrations();
     const price = FEE_PLANS[form.feePlan as FeePlan];
 
     const newReg: Registration = {
@@ -123,6 +176,9 @@ export default function RegisterStudentPage() {
       schedule: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      latitude: location.lat,
+      longitude: location.lng,
+      locationAddress: location.address,
     };
 
     db.saveRegistrations([...allRegs, newReg]);
@@ -156,6 +212,32 @@ export default function RegisterStudentPage() {
           className="bg-white rounded-xl border border-border shadow-card p-6 space-y-5"
           data-ocid="fe.register_student.section"
         >
+          {/* Location indicator */}
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin
+              className={`h-4 w-4 flex-shrink-0 ${
+                location.status === "captured"
+                  ? "text-green-600"
+                  : location.status === "pending"
+                    ? "text-amber-500"
+                    : "text-muted-foreground"
+              }`}
+            />
+            {location.status === "captured" ? (
+              <span className="text-green-700 text-xs font-medium">
+                Location captured ({location.address})
+              </span>
+            ) : location.status === "pending" ? (
+              <span className="text-amber-600 text-xs">
+                Capturing location...
+              </span>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                Location unavailable
+              </span>
+            )}
+          </div>
+
           {/* Student Name */}
           <div>
             <Label htmlFor="sname">Student Full Name *</Label>
@@ -210,7 +292,7 @@ export default function RegisterStudentPage() {
             </Select>
           </div>
 
-          {/* Standard — only active courses for the selected medium */}
+          {/* Standard */}
           <div>
             <Label>Standard *</Label>
             <Select
@@ -254,7 +336,7 @@ export default function RegisterStudentPage() {
                 {(Object.entries(FEE_PLANS) as [FeePlan, number][]).map(
                   ([plan, price]) => (
                     <SelectItem key={plan} value={plan}>
-                      {plan} — ₹{price}
+                      {plan} \u2014 \u20b9{price}
                     </SelectItem>
                   ),
                 )}

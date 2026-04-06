@@ -3,14 +3,19 @@ import { cn } from "@/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Award,
+  BarChart2,
   Bell,
   BookOpen,
   ChevronRight,
   ClipboardList,
+  Clock,
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  MapPin,
   Menu,
+  Target,
+  TrendingUp,
   Trophy,
   Users,
   X,
@@ -27,6 +32,10 @@ const navItems = [
   { href: "/admin/courses", label: "Courses", icon: BookOpen },
   { href: "/admin/certificates", label: "Certificates", icon: Award },
   { href: "/admin/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/admin/targets", label: "Targets", icon: Target },
+  { href: "/admin/attendance", label: "Attendance", icon: Clock },
+  { href: "/admin/map", label: "Map View", icon: MapPin },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -144,6 +153,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="fixed left-0 top-0 h-full w-56 sidebar-gradient z-50 flex flex-col md:hidden"
             >
+              <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+                <span className="text-sm font-bold text-sidebar-foreground">
+                  Menu
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(false)}
+                  className="text-sidebar-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               <SidebarContent />
             </motion.aside>
           </>
@@ -194,6 +215,7 @@ const feNavItems = [
   { href: "/fe/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/fe/register-student", label: "Register Student", icon: Users },
   { href: "/fe/my-students", label: "My Students", icon: ClipboardList },
+  { href: "/fe/performance", label: "Performance", icon: TrendingUp },
   { href: "/fe/notifications", label: "Notifications", icon: Bell },
 ];
 
