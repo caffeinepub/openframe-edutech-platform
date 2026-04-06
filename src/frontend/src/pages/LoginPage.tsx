@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { useApp } from "../context/AppContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { db } from "../lib/storage";
-import type { Student } from "../types/models";
+import type { FieldExecutive, Student } from "../types/models";
 
 type RoleView = "select" | "admin" | "fe" | "student";
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
       toast.success(`Welcome back, ${matched.name}!`);
       navigate({ to: "/fe/dashboard" });
     } else {
-      // No principal match — show linking form
+      // No principal match — show self-registration form
       setFeStep("linking");
     }
   }, [ii.identity, view, login, navigate]);
@@ -97,7 +97,7 @@ export default function LoginPage() {
     setAdminLoading(false);
   };
 
-  const handleFELinkSubmit = async (e: React.FormEvent) => {
+  const handleFERegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!linkName.trim() || !linkPhone.trim()) {
       toast.error("Please enter your full name and phone number");
@@ -110,34 +110,62 @@ export default function LoginPage() {
     setLinkLoading(true);
 
     const principalStr = ii.identity.getPrincipal().toString();
-    const fes = db.getFEs();
-    const matched = fes.find(
-      (f) =>
-        f.phone === linkPhone.trim() &&
-        f.name.toLowerCase() === linkName.trim().toLowerCase(),
-    );
+    const allFEs = db.getFEs();
 
-    if (!matched) {
-      toast.error("No FE account found. Please contact your admin.");
+    // Check if phone already registered to prevent duplicates
+    const existingByPhone = allFEs.find((f) => f.phone === linkPhone.trim());
+    if (existingByPhone) {
+      // If same principal or unlinked account, link and log in
+      if (
+        !existingByPhone.principal ||
+        existingByPhone.principal === principalStr
+      ) {
+        const updated = allFEs.map((f) =>
+          f.id === existingByPhone.id ? { ...f, principal: principalStr } : f,
+        );
+        db.saveFEs(updated);
+        login({
+          role: "fe",
+          id: existingByPhone.id,
+          name: existingByPhone.name,
+          phone: existingByPhone.phone,
+          feCode: existingByPhone.feCode,
+        });
+        toast.success(`Welcome back, ${existingByPhone.name}!`);
+        navigate({ to: "/fe/dashboard" });
+        setLinkLoading(false);
+        return;
+      }
+      toast.error(
+        "This phone number is already registered to another account.",
+      );
       setLinkLoading(false);
       return;
     }
 
-    // Update FE principal in DB
-    const updated = fes.map((f) =>
-      f.id === matched.id ? { ...f, principal: principalStr } : f,
-    );
-    db.saveFEs(updated);
+    // Create new FE account
+    const nextNum = allFEs.length + 1;
+    const feCode = `FE${String(nextNum).padStart(3, "0")}`;
+    const newFE: FieldExecutive = {
+      id: db.nextId(allFEs),
+      feCode,
+      name: linkName.trim(),
+      phone: linkPhone.trim(),
+      principal: principalStr,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+    };
+    db.saveFEs([...allFEs, newFE]);
 
     login({
       role: "fe",
-      id: matched.id,
-      name: matched.name,
-      phone: matched.phone,
-      feCode: matched.feCode,
+      id: newFE.id,
+      name: newFE.name,
+      phone: newFE.phone,
+      feCode: newFE.feCode,
     });
     toast.success(
-      `Welcome, ${matched.name}! Your Internet Identity is now linked.`,
+      `Welcome, ${newFE.name}! Your FE account (${feCode}) has been created.`,
     );
     navigate({ to: "/fe/dashboard" });
     setLinkLoading(false);
@@ -460,22 +488,22 @@ export default function LoginPage() {
                       </span>
                     </div>
                     <h2 className="text-lg font-bold text-foreground">
-                      Link your FE Account
+                      Create your FE Account
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Enter the name and phone number registered with your FE
-                      account to complete setup.
+                      Enter your name and phone number to register as a Field
+                      Executive.
                     </p>
                   </div>
 
-                  <form onSubmit={handleFELinkSubmit} className="space-y-4">
+                  <form onSubmit={handleFERegisterSubmit} className="space-y-4">
                     <div>
                       <Label htmlFor="link-name">Full Name</Label>
                       <Input
                         id="link-name"
                         value={linkName}
                         onChange={(e) => setLinkName(e.target.value)}
-                        placeholder="As registered by your admin"
+                        placeholder="Enter your full name"
                         className="mt-1"
                         data-ocid="login.fe_link_name.input"
                         autoComplete="name"
@@ -503,10 +531,10 @@ export default function LoginPage() {
                       {linkLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Linking account...
+                          Creating account...
                         </>
                       ) : (
-                        "Link & Sign In"
+                        "Register & Sign In"
                       )}
                     </Button>
                   </form>
@@ -538,7 +566,7 @@ export default function LoginPage() {
               >
                 <div className="mb-4 p-3 bg-teal-50 rounded-lg border border-teal-100">
                   <p className="text-xs text-teal-700 font-medium">
-                    🔐 Secure Identity Login — powered by Internet Identity
+                    Secure Identity Login — powered by Internet Identity
                   </p>
                   <p className="text-xs text-teal-600 mt-0.5">
                     Enter your name and phone to access your student portal. New

@@ -1,32 +1,23 @@
 # OpenFrame EduTech Platform
 
 ## Current State
-FE login uses a mock name+phone form (no real Internet Identity). `useInternetIdentity` hook exists and is functional but is not wired to FE login. FE records in `db` have a `principal` field currently storing placeholder strings like `fe-principal-001`.
-
-Student login also uses a mock name+phone form.
+- FE login uses Internet Identity. On first login, the app shows a linking form (name + phone) that tries to match an existing FE account in the DB. If no match is found, it shows "No FE account found. Please contact your admin."
+- Admin can create, edit, and delete FE accounts from the Field Executives page.
+- FE accounts are seeded with placeholder data (Rahul Sharma, Priya Singh).
 
 ## Requested Changes (Diff)
 
 ### Add
-- FE login: "Sign in with Internet Identity" button that triggers the real II auth flow.
-- FE first-time linking flow: after II login, if the returned principal does not match any FE record, show a form asking for name + phone to link their account (one-time setup). On successful match, the FE's `principal` field is updated to the real II principal.
-- FE subsequent logins: if the II principal already matches an FE record, log them in directly with no extra step.
+- FE self-registration: when an FE logs in with II for the first time and enters name + phone, a new FE account is created automatically (no admin pre-registration required).
 
 ### Modify
-- `LoginPage.tsx`: Replace the FE view's mock name+phone form with the II login flow (button → link form → success).
-- `AppContext.tsx` / logout: When an FE logs out, also call `clear()` from `useInternetIdentity` to properly clear the II session.
-- Main entry / providers: Ensure `InternetIdentityProvider` wraps the app so `useInternetIdentity` is available in `LoginPage`.
+- LoginPage.tsx: `handleFELinkSubmit` — instead of looking for an existing match and erroring if not found, always create a new FE account with the entered name + phone and the II principal.
+- FieldExecutivesPage.tsx: remove Add FE button, Edit button, Delete button, and the Add/Edit dialog and Delete confirm dialog. Page becomes read-only (view all self-registered FEs only).
 
 ### Remove
-- The `handleFELogin` mock handler and the `mockName`/`mockPhone` shared state for FE (student mock login remains unchanged for now).
+- The "No FE account found. Please contact your admin." error path in the FE linking flow.
+- Admin ability to add/edit/delete FE accounts.
 
 ## Implementation Plan
-1. Wrap `App` (or `main.tsx`) with `InternetIdentityProvider` if not already done.
-2. In `LoginPage.tsx`:
-   - Import `useInternetIdentity`.
-   - Add state: `feStep: 'button' | 'linking' | 'loading'`, `linkName`, `linkPhone`.
-   - On FE view: show a centered card with II button. On click, call `ii.login()`.
-   - Watch `ii.identity` — when it resolves, check if principal matches any FE. If yes, log in. If no, move to `linking` step.
-   - In linking step: show name + phone form. On submit, find FE by name+phone, update their principal to the II principal, then log in.
-3. In `AppContext.tsx`: expose `iiClear` callback (or handle in `LoginPage` itself by calling `ii.clear()` before navigating to login).
-4. Update FE dashboard logout button to also call `ii.clear()` to fully sign out of II.
+1. In `LoginPage.tsx` `handleFELinkSubmit`: remove the "no match found" error. Instead, generate a new FE account (auto FE code, new id) with the entered name, phone, and II principal, save it, then log in.
+2. In `FieldExecutivesPage.tsx`: remove the Add button, Edit/Delete action buttons, Add/Edit dialog, and Delete confirm dialog. Keep the table, search, and stats. Update empty state text to reflect FEs self-register.
