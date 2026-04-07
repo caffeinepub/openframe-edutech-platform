@@ -37,6 +37,7 @@ interface FEPerformanceRow {
   gap: number;
   paidStudents: number;
   commissionToday: number;
+  totalCommission: number;
   lastLogin: string | null;
   achievementPct: number;
   status: "on-target" | "at-risk" | "missed";
@@ -93,6 +94,7 @@ export default function FEPerformancePage() {
       const dailyTarget = fe.dailyTarget ?? DEFAULT_DAILY_TARGET;
       const gap = Math.max(0, dailyTarget - todayRegistrations);
       const commissionToday = todayPaidRegistrations * COMMISSION_RATE;
+      const totalCommission = paidStudents * COMMISSION_RATE;
       const achievementPct =
         dailyTarget > 0
           ? Math.min(100, Math.round((todayRegistrations / dailyTarget) * 100))
@@ -125,6 +127,7 @@ export default function FEPerformancePage() {
         gap,
         paidStudents,
         commissionToday,
+        totalCommission,
         lastLogin,
         achievementPct,
         status,
@@ -164,6 +167,10 @@ export default function FEPerformancePage() {
   ).length;
   const totalRegsToday = rows.reduce((s, r) => s + r.todayRegistrations, 0);
   const totalCommissionToday = rows.reduce((s, r) => s + r.commissionToday, 0);
+  const totalCommissionAllTime = rows.reduce(
+    (s, r) => s + r.totalCommission,
+    0,
+  );
 
   function getStatusBadge(status: FEPerformanceRow["status"]) {
     if (status === "on-target")
@@ -309,7 +316,7 @@ export default function FEPerformancePage() {
 
       {/* Summary Cards */}
       <div
-        className="grid grid-cols-2 md:grid-cols-5 gap-4"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
         data-ocid="admin.fe_performance.summary.section"
       >
         <div className="bg-white border border-border rounded-xl p-4 shadow-sm">
@@ -349,6 +356,16 @@ export default function FEPerformancePage() {
             \u20b9{totalCommissionToday}
           </p>
         </div>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <IndianRupee className="h-4 w-4 text-emerald-600" />
+            <span className="text-xs text-emerald-700">Total Commission</span>
+          </div>
+          <p className="text-xl font-bold text-emerald-700">
+            \u20b9{totalCommissionAllTime.toLocaleString("en-IN")}
+          </p>
+          <p className="text-xs text-emerald-600 mt-0.5">All-time</p>
+        </div>
       </div>
 
       {/* Performance Table */}
@@ -379,6 +396,7 @@ export default function FEPerformancePage() {
                 <TableHead className="text-center">Paid Students</TableHead>
                 <TableHead className="text-center">Min Students</TableHead>
                 <TableHead className="text-center">Commission Today</TableHead>
+                <TableHead className="text-center">Total Commission</TableHead>
                 <TableHead className="text-center">Last Login</TableHead>
                 <TableHead className="text-center">Status</TableHead>
               </TableRow>
@@ -387,7 +405,7 @@ export default function FEPerformancePage() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className="text-center py-8 text-muted-foreground"
                     data-ocid="admin.fe_performance.empty_state"
                   >
@@ -470,10 +488,14 @@ export default function FEPerformancePage() {
                       <span className="font-semibold text-green-700">
                         \u20b9{row.commissionToday}
                       </span>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        (\u20b9{COMMISSION_RATE} \u00d7{" "}
-                        {row.todayPaidRegistrations})
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-semibold text-emerald-700">
+                        \u20b9{row.totalCommission.toLocaleString("en-IN")}
                       </span>
+                      <p className="text-xs text-muted-foreground">
+                        {row.paidStudents} paid
+                      </p>
                     </TableCell>
                     <TableCell className="text-center text-sm text-muted-foreground">
                       {formatTime(row.lastLogin)}

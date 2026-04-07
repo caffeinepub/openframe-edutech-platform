@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, IndianRupee, Loader2, Search } from "lucide-react";
+import { Edit, Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
@@ -158,17 +158,11 @@ export default function MyStudentsPage() {
                       <MediumBadge medium={r.medium} />
                     </td>
                     <td className="p-4">
-                      <div className="space-y-0.5">
-                        {r.feePlan && (
-                          <p className="text-xs font-medium text-foreground">
-                            {r.feePlan}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground flex items-center gap-0.5">
-                          <IndianRupee className="h-3 w-3" />
-                          {r.price.toLocaleString("en-IN")}
+                      {r.feePlan && (
+                        <p className="text-xs font-medium text-foreground">
+                          {r.feePlan}
                         </p>
-                      </div>
+                      )}
                     </td>
                     <td className="p-4">
                       <StatusBadge status={r.status} />

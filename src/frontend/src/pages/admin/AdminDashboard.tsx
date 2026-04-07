@@ -33,6 +33,7 @@ import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
 const COLORS = ["#0F7C86", "#1697A0", "#1F8FB5"];
+const COMMISSION_RATE = 10;
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
     pending: 0,
     approved: 0,
     rejected: 0,
+    totalCommission: 0,
   });
   const [courseDistribution, setCourseDistribution] = useState<
     { name: string; value: number }[]
@@ -63,9 +65,9 @@ export default function AdminDashboard() {
       (r) => new Date(r.createdAt).toDateString() === today,
     ).length;
 
-    const revenue = registrations
-      .filter((r) => r.paymentStatus === "Paid")
-      .reduce((sum, r) => sum + r.price, 0);
+    const paidRegs = registrations.filter((r) => r.paymentStatus === "Paid");
+    const revenue = paidRegs.reduce((sum, r) => sum + r.price, 0);
+    const totalCommission = paidRegs.length * COMMISSION_RATE;
 
     const pending = registrations.filter((r) => r.status === "Pending").length;
     const approved = registrations.filter(
@@ -107,6 +109,7 @@ export default function AdminDashboard() {
       pending,
       approved,
       rejected,
+      totalCommission,
     });
     setCourseDistribution(dist);
     setLast7DaysData(days7);
@@ -136,7 +139,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-5 gap-4"
         data-ocid="admin.dashboard.section"
       >
         <StatCard
@@ -170,6 +173,14 @@ export default function AdminDashboard() {
           subtitle="Paid payments"
           color="purple"
           data-ocid="admin.revenue.card"
+        />
+        <StatCard
+          title="Total Commission"
+          value={`\u20b9${stats.totalCommission.toLocaleString("en-IN")}`}
+          icon={IndianRupee}
+          subtitle="FE commissions earned"
+          color="green"
+          data-ocid="admin.total_commission.card"
         />
       </div>
 

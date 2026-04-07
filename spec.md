@@ -1,84 +1,31 @@
 # OpenFrame EduTech Platform
 
 ## Current State
-
-- FieldExecutive has `dailyTarget` (seeded = 5), `weeklyTarget`, `monthlyTarget`, `incentivePerRegistration` (seeded as ₹100/₹80 per FE — inconsistent, no global rule)
-- FEDashboard shows target progress bars (daily/weekly/monthly) with toast alerts at 2 PM if <50% daily target met
-- Admin TargetsPage lets admin set daily/weekly/monthly targets per FE
-- SalaryCalc computes incentive only on paid registrations (correct)
-- No `minActiveStudents` concept exists anywhere
-- Commission per registration has no fixed global default (each FE has its own `incentivePerRegistration`)
-- No TeamLeader system yet (deferred from previous plan)
-- Alert only fires at 2 PM when <50% of target — no end-of-day missed alert
-- Admin has no dedicated "FE daily performance" view beyond TargetsPage
+- FE Dashboard shows per-plan earnings (Basic ₹50, Standard ₹100, Premium ₹150 with counts and totals), but the overall commission total (₹10/paid reg) was removed per a previous request.
+- Admin Dashboard has 4 stat cards (Total Students, Field Executives, Today's Registrations, Total Revenue) with no commission summary.
+- FE Performance Page shows `Commission Today` column per FE, but no platform-wide commission total card.
+- Payroll Page shows salary breakdowns but no commission total summary.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Global commission rule: ₹10 per successful paid registration** — set as default `incentivePerRegistration` for all FEs. Admin can still override per FE in Payroll config.
-- **Daily target default: 5 registrations/day** — already seeded but make it explicit in seed and enforce as the platform standard.
-- **Minimum 20 active students per FE** — add `minActiveStudents: 20` rule. "Active" = FE has at least 20 registrations with `paymentStatus === 'Paid'`. Show a new stat/alert on FE dashboard if below 20 paid students.
-- **FE Dashboard alert: daily target not met** — enhance existing alert logic:
-  - Alert at end of day (after 5 PM) if daily target not fully met (not just 50%)
-  - Show persistent banner/badge on dashboard if today's count < dailyTarget
-  - Show persistent banner if total paid students < 20
-- **Admin Daily FE Performance page** — new page `/admin/fe-performance` showing per-FE daily stats: FE name, today's registrations, daily target, gap, paid student count, active student status (green/red), last login time
-- **Commission rule display in Admin** — show ₹10/paid reg rule prominently in Payroll page and TargetsPage
+- **FE Dashboard > Earnings Card**: Add overall commission total (₹10 × paid registrations) displayed as a standalone value alongside the existing per-plan breakdown (Basic/Standard/Premium). No formula label needed — just the ₹ amount prominently shown.
+- **Admin Dashboard**: Add a new "Total Commission" stat card showing the sum of all FE commissions (total paid registrations across all FEs × ₹10).
+- **Admin > FE Performance Page**: Add a total commission column per FE (all-time paid registrations × ₹10, not just today). Also add a platform-wide total commission summary card.
+- **Admin > Payroll Page**: Add a commission total row/card in the salary breakdown per FE and a platform-wide commission summary card at the top.
+- **Other Admin Pages**: Show commission totals where relevant (e.g., FieldExecutives list page — add a commission column).
 
 ### Modify
-- **seedSalaryData()** — update seeded `incentivePerRegistration` to ₹10 for all FEs (was ₹100/₹80)
-- **seedIfNeeded()** — ensure `dailyTarget: 5` remains the default for all seeded FEs
-- **FEDashboard** — add:
-  - Persistent alert banner when today < dailyTarget (not just toast)
-  - Active students count card (paid registrations)
-  - Alert badge when paid student count < 20
-  - Clarify commission rate shown as ₹10/paid reg
-- **Admin TargetsPage** — add a column showing each FE's paid student count vs 20 minimum with color indicator
-- **Admin FieldExecutivesPage** — add "Paid Students" count column and highlight FEs below 20
-- **Admin Payroll page** — update default `incentivePerRegistration` seeding to ₹10 and show the global rule banner
+- FE Dashboard Earnings Card: Keep existing per-plan breakdown, add commission total section below or alongside it.
+- Admin Dashboard Stats Grid: Expand from 4 to 5 cards (or 2×3 grid) to include Total Commission.
+- Admin FE Performance summary cards: Add total all-time commission card.
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-
-1. Update `storage.ts`:
-   - Change `incentivePerRegistration` seed values to ₹10 for all FEs
-   - Add `minActiveStudents: 20` to FieldExecutive type and seed data
-   - Add `SEEDED_V5` flag for migration: patch existing FEs with `incentivePerRegistration = 10` and `minActiveStudents = 20`
-
-2. Update `types/models.ts`:
-   - Add `minActiveStudents?: number` to `FieldExecutive` interface
-
-3. Update `FEDashboard.tsx`:
-   - Add `activePaidStudents` to stats (count of unique paid registrations for this FE)
-   - Add persistent warning banner: "Daily target not met: X/5 today" when today < dailyTarget
-   - Add persistent warning banner: "Active students below minimum: X/20" when paidCount < 20
-   - Update commission display to show ₹10/paid reg
-   - Enhance alert: fire toast at 5 PM (in addition to 2 PM 50% check) for fully missed target
-
-4. Update `salaryCalc.ts`:
-   - Change default `incentivePerRegistration` fallback from arbitrary value to 10
-
-5. Update `TargetsPage.tsx`:
-   - Add "Paid Students" column showing count vs 20 minimum with green/amber indicator
-   - Add global rule banner: "Commission: ₹10/paid reg | Daily Target: 5 | Min Active Students: 20"
-
-6. Update `FieldExecutivesPage.tsx`:
-   - Add "Paid Students" column, highlight rows where paid count < 20
-
-7. Add new page `src/frontend/src/pages/admin/FEPerformancePage.tsx`:
-   - Daily performance table: FE Name, FE Code, Today's Regs, Daily Target, Gap (target - today), Paid Students, Min Students Status, Last Login
-   - Color coding: green = on target, amber = at risk, red = missed
-   - Auto-refresh every 60 seconds
-   - Export/print button
-
-8. Update `PayrollPage.tsx`:
-   - Show global commission rule banner at top: "Default commission: ₹10 per paid registration"
-   - When editing FE salary config, show ₹10 as the pre-filled default incentive rate
-
-9. Update `routeTree.tsx`:
-   - Add `/admin/fe-performance` route
-
-10. Update `DashboardLayouts.tsx` (admin sidebar):
-    - Add "FE Performance" nav link under analytics section
+1. **FE Dashboard** (`FEDashboard.tsx`): In the Earnings Card section, add a commission total row showing `₹{stats.paid × 10}` from `{stats.paid}` paid registrations. Display it cleanly below or alongside the per-plan breakdown.
+2. **Admin Dashboard** (`AdminDashboard.tsx`): Compute total commission = sum of all paid registrations × 10. Add a 5th stat card "Total Commission" to the stats grid.
+3. **FE Performance Page** (`FEPerformancePage.tsx`): Add all-time total commission per FE (all paid regs × ₹10) as a new column in the table. Add a 6th summary card for platform total commission (all-time).
+4. **Payroll Page** (`PayrollPage.tsx`): Add a commission total line item in each FE's salary breakdown and a summary card for total commission across all FEs for the selected month.
+5. **Field Executives Page** (`FieldExecutivesPage.tsx`): Add a commission column showing total earned (all-time paid regs × ₹10) per FE.

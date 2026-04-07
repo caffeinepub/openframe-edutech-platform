@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Calendar, Phone, Users } from "lucide-react";
+import { Calendar, IndianRupee, Phone, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/EmptyState";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -7,6 +7,7 @@ import { db } from "../../lib/storage";
 import type { FieldExecutive } from "../../types/models";
 
 const MIN_ACTIVE_STUDENTS = 20;
+const COMMISSION_RATE = 10;
 
 export default function FieldExecutivesPage() {
   const [fes, setFEs] = useState<FieldExecutive[]>([]);
@@ -87,6 +88,9 @@ export default function FieldExecutivesPage() {
                     Paid Students
                   </th>
                   <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase">
+                    Total Commission
+                  </th>
+                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase">
                     Joined
                   </th>
                   <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase">
@@ -97,6 +101,7 @@ export default function FieldExecutivesPage() {
               <tbody>
                 {filtered.map((fe, idx) => {
                   const paidCount = getPaidCount(fe.id);
+                  const commission = paidCount * COMMISSION_RATE;
                   return (
                     <tr
                       key={fe.id}
@@ -129,6 +134,15 @@ export default function FieldExecutivesPage() {
                             (need {MIN_ACTIVE_STUDENTS - paidCount} more)
                           </span>
                         )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-1 text-green-700 font-semibold">
+                          <IndianRupee className="h-3 w-3" />
+                          <span>{commission.toLocaleString("en-IN")}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {paidCount} paid
+                        </p>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-1.5 text-muted-foreground">

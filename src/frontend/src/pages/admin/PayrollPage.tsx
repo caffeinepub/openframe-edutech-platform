@@ -63,6 +63,8 @@ const MONTH_LABELS: Record<string, string> = {
   "12": "December",
 };
 
+const COMMISSION_RATE = 10;
+
 function formatMonth(m: string) {
   const [year, mon] = m.split("-");
   return `${MONTH_LABELS[mon] ?? mon} ${year}`;
@@ -122,6 +124,21 @@ export default function PayrollPage() {
   const paidAmt = records
     .filter((r) => r.paymentStatus === "Paid")
     .reduce((s, r) => s + r.finalSalary, 0);
+
+  // Total commission for selected month
+  const [year, mon] = month.split("-");
+  const allRegs = db.getRegistrations();
+  const monthStart = new Date(`${year}-${mon}-01`);
+  const monthEnd = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    0,
+  );
+  const monthlyPaidRegs = allRegs.filter((r) => {
+    const d = new Date(r.createdAt);
+    return r.paymentStatus === "Paid" && d >= monthStart && d <= monthEnd;
+  });
+  const totalCommission = monthlyPaidRegs.length * COMMISSION_RATE;
 
   function updateStatus(feId: number, status: "Approved" | "Paid") {
     const stored = db.getSalaryRecords();
@@ -472,7 +489,7 @@ export default function PayrollPage() {
 
         {/* Summary Cards */}
         <div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-5 gap-4"
           data-ocid="admin.payroll.summary"
         >
           {[
@@ -503,6 +520,13 @@ export default function PayrollPage() {
               color: "text-green-700",
               bg: "bg-green-50",
               icon: Award,
+            },
+            {
+              label: "Total Commission",
+              value: totalCommission,
+              color: "text-emerald-700",
+              bg: "bg-emerald-50",
+              icon: IndianRupee,
             },
           ].map(({ label, value, color, bg, icon: Icon }) => (
             <div

@@ -47,13 +47,16 @@ export default function FEDashboard() {
     paid: 0,
     pending: 0,
     totalEarned: 0,
-    earnedBasic: 0,
-    earnedStandard: 0,
-    earnedPremium: 0,
     weekCount: 0,
     monthCount: 0,
     todayIncentive: 0,
     todayPaidRegs: 0,
+    basicPaid: 0,
+    standardPaid: 0,
+    premiumPaid: 0,
+    basicEarned: 0,
+    standardEarned: 0,
+    premiumEarned: 0,
   });
 
   const loadData = useCallback(() => {
@@ -74,22 +77,24 @@ export default function FEDashboard() {
     const pending = allRegs.filter((r) => r.status === "Pending").length;
 
     const paidRegs = allRegs.filter((r) => r.paymentStatus === "Paid");
-    const totalEarned = paidRegs.reduce((sum, r) => sum + r.price, 0);
-    const earnedBasic = paidRegs
-      .filter((r) => r.feePlan === "Basic")
-      .reduce((sum, r) => sum + r.price, 0);
-    const earnedStandard = paidRegs
-      .filter((r) => r.feePlan === "Standard")
-      .reduce((sum, r) => sum + r.price, 0);
-    const earnedPremium = paidRegs
-      .filter((r) => r.feePlan === "Premium")
-      .reduce((sum, r) => sum + r.price, 0);
+    const totalEarned = paidRegs.length * COMMISSION_RATE;
+
     const weekCount = allRegs.filter(
       (r) => new Date(r.createdAt) >= weekAgo,
     ).length;
     const monthCount = allRegs.filter(
       (r) => new Date(r.createdAt) >= monthAgo,
     ).length;
+
+    // Per-plan earnings
+    const basicPaid = paidRegs.filter((r) => r.feePlan === "Basic").length;
+    const standardPaid = paidRegs.filter(
+      (r) => r.feePlan === "Standard",
+    ).length;
+    const premiumPaid = paidRegs.filter((r) => r.feePlan === "Premium").length;
+    const basicEarned = basicPaid * 50;
+    const standardEarned = standardPaid * 100;
+    const premiumEarned = premiumPaid * 150;
 
     // Today's salary incentive
     const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
@@ -111,13 +116,16 @@ export default function FEDashboard() {
       paid,
       pending,
       totalEarned,
-      earnedBasic,
-      earnedStandard,
-      earnedPremium,
       weekCount,
       monthCount,
       todayIncentive,
       todayPaidRegs: todayPaidRegistrations,
+      basicPaid,
+      standardPaid,
+      premiumPaid,
+      basicEarned,
+      standardEarned,
+      premiumEarned,
     });
 
     // Auto-alerts (toast)
@@ -522,48 +530,92 @@ export default function FEDashboard() {
           <TrendingUp className="h-4 w-4 text-green-600" />
           <h3 className="font-semibold text-foreground">Total Earnings</h3>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+
+        {/* Overall Commission Total */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
               \u20b9{stats.totalEarned.toLocaleString("en-IN")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              From {stats.paid} paid registration{stats.paid !== 1 ? "s" : ""}
+              Overall commission from {stats.paid} paid registration
+              {stats.paid !== 1 ? "s" : ""}
             </p>
           </div>
           <div className="flex gap-4 text-sm">
-            <div className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg px-4 py-2">
-              <span className="text-xs font-medium text-foreground mb-0.5">
-                Basic
+            <div className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg px-5 py-3">
+              <span className="text-xs font-medium text-muted-foreground mb-1">
+                Total Registrations
               </span>
-              <span className="text-xs text-muted-foreground mb-1">
-                \u20b950/student
-              </span>
-              <span className="font-semibold text-foreground">
-                \u20b9{stats.earnedBasic.toLocaleString("en-IN")}
+              <span className="text-xl font-bold text-foreground">
+                {stats.total}
               </span>
             </div>
-            <div className="flex flex-col items-center bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              <span className="text-xs font-medium text-foreground mb-0.5">
-                Standard
+            <div className="flex flex-col items-center bg-green-50 border border-green-200 rounded-lg px-5 py-3">
+              <span className="text-xs font-medium text-muted-foreground mb-1">
+                Paid Registrations
               </span>
-              <span className="text-xs text-blue-500 mb-1">
-                \u20b9100/student
-              </span>
-              <span className="font-semibold text-foreground">
-                \u20b9{stats.earnedStandard.toLocaleString("en-IN")}
+              <span className="text-xl font-bold text-green-600">
+                {stats.paid}
               </span>
             </div>
-            <div className="flex flex-col items-center bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
-              <span className="text-xs font-medium text-foreground mb-0.5">
-                Premium
-              </span>
-              <span className="text-xs text-purple-500 mb-1">
-                \u20b9150/student
-              </span>
-              <span className="font-semibold text-foreground">
-                \u20b9{stats.earnedPremium.toLocaleString("en-IN")}
-              </span>
+          </div>
+        </div>
+
+        {/* Per-Plan Breakdown */}
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Earnings by Fee Plan
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-blue-800">
+                  Basic
+                </span>
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                  \u20b950/student
+                </span>
+              </div>
+              <p className="text-2xl font-bold text-blue-700">
+                \u20b9{stats.basicEarned.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                {stats.basicPaid} student{stats.basicPaid !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-teal-800">
+                  Standard
+                </span>
+                <span className="text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded">
+                  \u20b9100/student
+                </span>
+              </div>
+              <p className="text-2xl font-bold text-teal-700">
+                \u20b9{stats.standardEarned.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-teal-600 mt-1">
+                {stats.standardPaid} student
+                {stats.standardPaid !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-purple-800">
+                  Premium
+                </span>
+                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                  \u20b9150/student
+                </span>
+              </div>
+              <p className="text-2xl font-bold text-purple-700">
+                \u20b9{stats.premiumEarned.toLocaleString("en-IN")}
+              </p>
+              <p className="text-xs text-purple-600 mt-1">
+                {stats.premiumPaid} student{stats.premiumPaid !== 1 ? "s" : ""}
+              </p>
             </div>
           </div>
         </div>
@@ -682,16 +734,10 @@ export default function FEDashboard() {
                   Course
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
-                  Fee Plan
-                </th>
-                <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Status
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Payment
-                </th>
-                <th className="text-left p-4 text-xs font-medium text-muted-foreground">
-                  Amount
                 </th>
                 <th className="text-left p-4 text-xs font-medium text-muted-foreground">
                   Date
@@ -702,7 +748,7 @@ export default function FEDashboard() {
               {regs.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={5}
                     className="text-center p-6 text-muted-foreground"
                   >
                     No registrations yet. Start registering students!
@@ -729,26 +775,10 @@ export default function FEDashboard() {
                       {r.courseName}
                     </td>
                     <td className="p-4">
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          r.feePlan === "Premium"
-                            ? "bg-purple-100 text-purple-700"
-                            : r.feePlan === "Standard"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {r.feePlan}
-                      </span>
-                    </td>
-                    <td className="p-4">
                       <StatusBadge status={r.status} />
                     </td>
                     <td className="p-4">
                       <StatusBadge status={r.paymentStatus} />
-                    </td>
-                    <td className="p-4 font-medium text-foreground">
-                      \u20b9{r.price}
                     </td>
                     <td className="p-4 text-xs text-muted-foreground">
                       {new Date(r.createdAt).toLocaleDateString("en-IN", {
