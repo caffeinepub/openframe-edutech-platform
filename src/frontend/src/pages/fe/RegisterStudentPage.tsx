@@ -336,7 +336,7 @@ export default function RegisterStudentPage() {
                 {(Object.entries(FEE_PLANS) as [FeePlan, number][]).map(
                   ([plan, price]) => (
                     <SelectItem key={plan} value={plan}>
-                      {plan} \u2014 \u20b9{price}
+                      {`${plan} — ₹${price}`}
                     </SelectItem>
                   ),
                 )}
