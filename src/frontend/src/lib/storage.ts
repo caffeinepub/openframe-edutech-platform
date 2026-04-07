@@ -33,6 +33,7 @@ const KEYS = {
   SALARY_RECORDS: "openframe_salary_records",
   DEDUCTION_CONFIG: "openframe_deduction_config",
   SEEDED_V4: "openframe_seeded_v4",
+  SEEDED_V5: "openframe_seeded_v5",
 };
 
 function getItem<T>(key: string): T[] {
@@ -57,6 +58,32 @@ function migrateV1(): void {
   );
   setItem(KEYS.FES, migrated);
   localStorage.setItem(KEYS.MIGRATED_V1, "true");
+}
+
+// ---- MIGRATION V5: commission=₹10, minActiveStudents=20 ----
+function migrateV5(): void {
+  if (localStorage.getItem(KEYS.SEEDED_V5)) return;
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  if (fes.length === 0) return; // not seeded yet, skip
+  const updated = fes.map((fe) => ({
+    ...fe,
+    incentivePerRegistration: 10,
+    minActiveStudents: fe.minActiveStudents ?? 20,
+    dailyTarget: fe.dailyTarget ?? 5,
+  }));
+  setItem(KEYS.FES, updated);
+
+  // Also update salary configs to use ₹10 incentive
+  const configs = getItem<SalaryConfig>(KEYS.SALARY_CONFIGS);
+  if (configs.length > 0) {
+    const updatedConfigs = configs.map((c) => ({
+      ...c,
+      incentivePerRegistration: 10,
+    }));
+    setItem(KEYS.SALARY_CONFIGS, updatedConfigs);
+  }
+
+  localStorage.setItem(KEYS.SEEDED_V5, "true");
 }
 
 const ORDINALS = [
@@ -85,7 +112,11 @@ function makeCourseTitle(
 export function seedIfNeeded(): void {
   migrateV1();
 
-  if (localStorage.getItem(KEYS.SEEDED)) return;
+  if (localStorage.getItem(KEYS.SEEDED)) {
+    // Still run V5 migration even if already seeded
+    migrateV5();
+    return;
+  }
 
   const courses: Course[] = [
     ...Array.from({ length: 12 }, (_, i) => ({
@@ -209,9 +240,10 @@ export function seedIfNeeded(): void {
       performanceScore: 72,
       rank: "Gold",
       fixedSalary: 8000,
-      incentivePerRegistration: 100,
+      incentivePerRegistration: 10,
       bonusEarned: 0,
       totalEarnings: 0,
+      minActiveStudents: 20,
     },
     {
       id: 2,
@@ -230,9 +262,10 @@ export function seedIfNeeded(): void {
       performanceScore: 55,
       rank: "Silver",
       fixedSalary: 7000,
-      incentivePerRegistration: 80,
+      incentivePerRegistration: 10,
       bonusEarned: 0,
       totalEarnings: 0,
+      minActiveStudents: 20,
     },
   ];
 
@@ -434,6 +467,8 @@ export function seedIfNeeded(): void {
   setItem(KEYS.TIME_LOGS, timeLogs);
   setItem(KEYS.ACTIVITY_LOGS, [] as ActivityLog[]);
   localStorage.setItem(KEYS.SEEDED, "true");
+  // Mark V5 as done since we seeded with correct values
+  localStorage.setItem(KEYS.SEEDED_V5, "true");
 }
 
 // ---- SALARY SEED ----
@@ -455,9 +490,10 @@ export function seedSalaryData(): void {
         return {
           ...fe,
           fixedSalary: fe.id === 1 ? 8000 : 7000,
-          incentivePerRegistration: fe.id === 1 ? 100 : 80,
+          incentivePerRegistration: 10,
           bonusEarned: 0,
           totalEarnings: 0,
+          minActiveStudents: fe.minActiveStudents ?? 20,
         };
       }
       return fe;
@@ -471,10 +507,10 @@ export function seedSalaryData(): void {
   const updatedFEs = fes.map((fe) => ({
     ...fe,
     fixedSalary: fe.fixedSalary ?? (fe.id === 1 ? 8000 : 7000),
-    incentivePerRegistration:
-      fe.incentivePerRegistration ?? (fe.id === 1 ? 100 : 80),
+    incentivePerRegistration: 10,
     bonusEarned: fe.bonusEarned ?? 0,
     totalEarnings: fe.totalEarnings ?? 0,
+    minActiveStudents: fe.minActiveStudents ?? 20,
   }));
   setItem(KEYS.FES, updatedFEs);
 
@@ -482,7 +518,7 @@ export function seedSalaryData(): void {
     {
       feId: 1,
       fixedSalary: 8000,
-      incentivePerRegistration: 100,
+      incentivePerRegistration: 10,
       bonusSlabs: DEFAULT_BONUS_SLABS,
       top1Bonus: 500,
       top2Bonus: 300,
@@ -491,7 +527,7 @@ export function seedSalaryData(): void {
     {
       feId: 2,
       fixedSalary: 7000,
-      incentivePerRegistration: 80,
+      incentivePerRegistration: 10,
       bonusSlabs: DEFAULT_BONUS_SLABS,
       top1Bonus: 500,
       top2Bonus: 300,
@@ -590,6 +626,10 @@ export const db = {
   saveSession: (session: unknown) =>
     localStorage.setItem(KEYS.SESSION, JSON.stringify(session)),
   clearSession: () => localStorage.removeItem(KEYS.SESSION),
+
+  // Team Leader stubs (future TL system)
+  getTeamLeaders: (): unknown[] => [],
+  saveTeamLeaders: (_tls: unknown[]): void => {},
 
   nextId: (items: { id: number }[]): number =>
     items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1,

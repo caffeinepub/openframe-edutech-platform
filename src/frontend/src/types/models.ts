@@ -22,6 +22,8 @@ export interface FieldExecutive {
   incentivePerRegistration: number;
   bonusEarned: number;
   totalEarnings: number;
+  // v5 commission/team fields
+  minActiveStudents?: number;
 }
 
 export interface Course {

@@ -8,11 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Save, Target } from "lucide-react";
+import { IndianRupee, Info, Save, Target, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { db } from "../../lib/storage";
 import type { FieldExecutive } from "../../types/models";
+
+const COMMISSION_RATE = 10;
+const DEFAULT_DAILY_TARGET = 5;
+const MIN_ACTIVE_STUDENTS = 20;
 
 interface FETargetRow {
   fe: FieldExecutive;
@@ -22,6 +26,7 @@ interface FETargetRow {
   todayCount: number;
   weekCount: number;
   monthCount: number;
+  paidStudents: number;
 }
 
 export default function TargetsPage() {
@@ -48,14 +53,18 @@ export default function TargetsPage() {
       const monthCount = feRegs.filter(
         (r) => new Date(r.createdAt) >= monthAgo,
       ).length;
+      const paidStudents = feRegs.filter(
+        (r) => r.paymentStatus === "Paid",
+      ).length;
       return {
         fe,
-        dailyTarget: fe.dailyTarget ?? 5,
+        dailyTarget: fe.dailyTarget ?? DEFAULT_DAILY_TARGET,
         weeklyTarget: fe.weeklyTarget ?? 25,
         monthlyTarget: fe.monthlyTarget ?? 100,
         todayCount,
         weekCount,
         monthCount,
+        paidStudents,
       };
     });
     setRows(data);
@@ -87,6 +96,12 @@ export default function TargetsPage() {
     toast.success(`Targets updated for ${row.fe.name}`);
   };
 
+  function getPaidStudentsColor(count: number): string {
+    if (count >= MIN_ACTIVE_STUDENTS) return "text-green-600 font-semibold";
+    if (count >= 10) return "text-amber-600 font-semibold";
+    return "text-red-600 font-semibold";
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -96,6 +111,39 @@ export default function TargetsPage() {
         <p className="text-muted-foreground text-sm mt-0.5">
           Set daily, weekly, and monthly registration targets for each FE
         </p>
+      </div>
+
+      {/* Global Commission Rules Banner */}
+      <div
+        className="bg-indigo-50 border border-indigo-200 rounded-xl p-4"
+        data-ocid="admin.targets.rules.card"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Info className="h-4 w-4 text-indigo-600" />
+          <span className="text-sm font-semibold text-indigo-700">
+            Commission & Performance Rules
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-6">
+          <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
+            <IndianRupee className="h-3.5 w-3.5" />
+            <span>
+              <strong>Commission:</strong> \u20b9{COMMISSION_RATE}/paid reg
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
+            <Target className="h-3.5 w-3.5" />
+            <span>
+              <strong>Daily Target:</strong> {DEFAULT_DAILY_TARGET} regs/day
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
+            <UserCheck className="h-3.5 w-3.5" />
+            <span>
+              <strong>Min Active Students:</strong> {MIN_ACTIVE_STUDENTS}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div
@@ -122,6 +170,8 @@ export default function TargetsPage() {
                 <TableHead className="text-center">Week Progress</TableHead>
                 <TableHead className="text-center">Monthly Target</TableHead>
                 <TableHead className="text-center">Month Progress</TableHead>
+                <TableHead className="text-center">Paid Students</TableHead>
+                <TableHead className="text-center">Min 20 Status</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -129,7 +179,7 @@ export default function TargetsPage() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={11}
                     className="text-center py-8 text-muted-foreground"
                     data-ocid="admin.targets.empty_state"
                   >
@@ -231,6 +281,24 @@ export default function TargetsPage() {
                       >
                         {row.monthCount} / {row.monthlyTarget}
                       </span>
+                    </TableCell>
+                    {/* Paid Students */}
+                    <TableCell className="text-center">
+                      <span className={getPaidStudentsColor(row.paidStudents)}>
+                        {row.paidStudents}
+                      </span>
+                    </TableCell>
+                    {/* Min 20 Status */}
+                    <TableCell className="text-center">
+                      {row.paidStudents >= MIN_ACTIVE_STUDENTS ? (
+                        <span className="text-green-600 font-medium text-sm">
+                          \u2705 Met
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 font-medium text-sm">
+                          \u26A0\uFE0F Below
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Button

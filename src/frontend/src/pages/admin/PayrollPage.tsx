@@ -451,6 +451,25 @@ export default function PayrollPage() {
           </div>
         </div>
 
+        {/* Commission Rules Banner */}
+        <div
+          className="bg-amber-50 border border-amber-200 rounded-xl p-4"
+          data-ocid="admin.payroll.commission_rules.card"
+        >
+          <div className="flex items-start gap-2">
+            <IndianRupee className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                Default Commission Rate: ₹10 per paid registration
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                All FE commission calculations use this rate unless individually
+                overridden in the salary configuration below.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Summary Cards */}
         <div
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"

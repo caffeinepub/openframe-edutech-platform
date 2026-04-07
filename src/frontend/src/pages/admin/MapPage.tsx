@@ -1,17 +1,7 @@
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { MapPin } from "lucide-react";
 import { useMemo } from "react";
-import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
-
-// Fix Leaflet default icons
-(L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl =
-  undefined;
-L.Icon.Default.mergeOptions({ iconUrl: markerIcon, shadowUrl: markerShadow });
 
 // FE color palette
 const FE_COLORS = ["#0F7C86", "#1697A0", "#9333EA", "#E85D04", "#2563EB"];
@@ -96,7 +86,7 @@ export default function MapPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map */}
+        {/* Map placeholder */}
         <div
           className="lg:col-span-2 bg-white rounded-xl border border-border shadow-card overflow-hidden"
           style={{ minHeight: 420 }}
@@ -112,58 +102,55 @@ export default function MapPage() {
               </p>
             </div>
           ) : (
-            <MapContainer
-              center={[12.9716, 77.5946]}
-              zoom={11}
-              style={{ height: 420, width: "100%" }}
-              scrollWheelZoom={false}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+            <div className="p-4 space-y-3" style={{ minHeight: 420 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">
+                  Registration Locations
+                </span>
+              </div>
               {geoRegs.map((reg) => (
-                <CircleMarker
+                <div
                   key={reg.id}
-                  center={[reg.latitude as number, reg.longitude as number]}
-                  radius={10}
-                  fillColor={getFeColor(reg.feId)}
-                  color="white"
-                  weight={2}
-                  opacity={1}
-                  fillOpacity={0.85}
+                  className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg border border-border"
                 >
-                  <Popup>
-                    <div className="text-xs space-y-1 min-w-32">
-                      <p className="font-bold text-sm">{reg.studentName}</p>
-                      <p className="text-gray-500">{reg.studentPhone}</p>
-                      <hr />
-                      <p>
-                        <span className="font-medium">FE:</span> {reg.feName}
+                  <div
+                    className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
+                    style={{ backgroundColor: getFeColor(reg.feId) }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <p className="font-medium text-sm text-foreground">
+                        {reg.studentName}
                       </p>
-                      <p>
-                        <span className="font-medium">Course:</span>{" "}
-                        {reg.courseName}
-                      </p>
-                      <p>
-                        <span className="font-medium">Plan:</span> {reg.feePlan}{" "}
-                        (₹{reg.price})
-                      </p>
-                      <p>
-                        <span className="font-medium">Date:</span>{" "}
-                        {formatDate(reg.createdAt)}
-                      </p>
-                      {reg.locationAddress && (
-                        <p>
-                          <span className="font-medium">Location:</span>{" "}
-                          {reg.locationAddress}
-                        </p>
-                      )}
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          reg.paymentStatus === "Paid"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {reg.paymentStatus}
+                      </span>
                     </div>
-                  </Popup>
-                </CircleMarker>
+                    <p className="text-xs text-muted-foreground">
+                      {reg.feName} \u2022 {reg.courseName}
+                    </p>
+                    {reg.locationAddress && (
+                      <p className="text-xs text-primary mt-1 flex items-center gap-1">
+                        <MapPin className="h-2.5 w-2.5" />
+                        {reg.locationAddress}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Lat: {reg.latitude?.toFixed(4)}, Lng:{" "}
+                      {reg.longitude?.toFixed(4)} \u2022{" "}
+                      {formatDate(reg.createdAt)}
+                    </p>
+                  </div>
+                </div>
               ))}
-            </MapContainer>
+            </div>
           )}
         </div>
 

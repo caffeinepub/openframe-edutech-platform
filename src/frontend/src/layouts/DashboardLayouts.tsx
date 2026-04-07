@@ -4,6 +4,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Award,
   BarChart2,
+  BarChart3,
   Bell,
   BookOpen,
   ChevronRight,
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/admin/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/admin/targets", label: "Targets", icon: Target },
+  { href: "/admin/fe-performance", label: "FE Performance", icon: BarChart3 },
   { href: "/admin/attendance", label: "Attendance", icon: Clock },
   { href: "/admin/map", label: "Map View", icon: MapPin },
   { href: "/admin/payroll", label: "Payroll", icon: IndianRupee },

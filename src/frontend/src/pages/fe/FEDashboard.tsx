@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
+  AlertTriangle,
+  CheckCircle2,
   Clock,
   IndianRupee,
   LogIn,
@@ -11,8 +13,10 @@ import {
   Target,
   TrendingUp,
   Trophy,
+  UserCheck,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -23,12 +27,19 @@ import { computeTodayEarnings } from "../../lib/salaryCalc";
 import { db } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
 
+// Commission rules constants
+const COMMISSION_RATE = 10; // ₹10 per paid registration
+const MIN_ACTIVE_STUDENTS = 20;
+const DEFAULT_DAILY_TARGET = 5;
+
 export default function FEDashboard() {
   const { session } = useApp();
   const [regs, setRegs] = useState<Registration[]>([]);
   const [feData, setFeData] = useState<FieldExecutive | null>(null);
   const [todayLog, setTodayLog] = useState<TimeLog | null>(null);
   const [elapsedHours, setElapsedHours] = useState(0);
+  const [dismissedTargetAlert, setDismissedTargetAlert] = useState(false);
+  const [dismissedStudentsAlert, setDismissedStudentsAlert] = useState(false);
   const alertShownRef = useRef(false);
   const [stats, setStats] = useState({
     total: 0,
@@ -109,15 +120,15 @@ export default function FEDashboard() {
       todayPaidRegs: todayPaidRegistrations,
     });
 
-    // Auto-alerts
+    // Auto-alerts (toast)
     if (!alertShownRef.current && fe) {
       const currentHour = new Date().getHours();
-      if (todayCount >= (fe.dailyTarget ?? 5)) {
+      if (todayCount >= (fe.dailyTarget ?? DEFAULT_DAILY_TARGET)) {
         toast.success("\uD83C\uDF89 Daily target achieved! Great work!");
         alertShownRef.current = true;
       } else if (
         currentHour >= 14 &&
-        todayCount < (fe.dailyTarget ?? 5) * 0.5
+        todayCount < (fe.dailyTarget ?? DEFAULT_DAILY_TARGET) * 0.5
       ) {
         toast.warning(
           "\u26A0\uFE0F You've reached less than 50% of your daily target",
@@ -191,9 +202,10 @@ export default function FEDashboard() {
     toast.success(`Clocked out. Worked ${workHours} hours today.`);
   }
 
-  const dailyTarget = feData?.dailyTarget ?? 5;
+  const dailyTarget = feData?.dailyTarget ?? DEFAULT_DAILY_TARGET;
   const weeklyTarget = feData?.weeklyTarget ?? 25;
   const monthlyTarget = feData?.monthlyTarget ?? 100;
+  const minActiveStudents = feData?.minActiveStudents ?? MIN_ACTIVE_STUDENTS;
 
   const dailyProgress = Math.min((stats.today / dailyTarget) * 100, 100);
   const weeklyProgress = Math.min((stats.weekCount / weeklyTarget) * 100, 100);
@@ -201,6 +213,22 @@ export default function FEDashboard() {
     (stats.monthCount / monthlyTarget) * 100,
     100,
   );
+
+  // Alert conditions
+  const currentHour = new Date().getHours();
+  const showTargetAlert =
+    !dismissedTargetAlert && currentHour >= 17 && stats.today < dailyTarget;
+  const showStudentsAlert =
+    !dismissedStudentsAlert && stats.paid < minActiveStudents;
+
+  // Progress bar color based on achievement
+  function getProgressColor(current: number, target: number): string {
+    if (target === 0) return "";
+    const pct = current / target;
+    if (pct >= 1) return "[&>div]:bg-green-500";
+    if (pct >= 0.5) return "[&>div]:bg-amber-500";
+    return "[&>div]:bg-red-500";
+  }
 
   function getRankBadge() {
     const rank = feData?.rank ?? "Unranked";
@@ -236,9 +264,85 @@ export default function FEDashboard() {
         </p>
       </div>
 
+      {/* Commission Rules Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">
+        <div className="flex items-center gap-1.5 text-blue-700 font-medium">
+          <IndianRupee className="h-3.5 w-3.5" />
+          <span>Commission: \u20b9{COMMISSION_RATE}/paid reg</span>
+        </div>
+        <div className="text-blue-400 hidden sm:block">|</div>
+        <div className="flex items-center gap-1.5 text-blue-700 font-medium">
+          <Target className="h-3.5 w-3.5" />
+          <span>Daily Target: {DEFAULT_DAILY_TARGET} regs/day</span>
+        </div>
+        <div className="text-blue-400 hidden sm:block">|</div>
+        <div className="flex items-center gap-1.5 text-blue-700 font-medium">
+          <UserCheck className="h-3.5 w-3.5" />
+          <span>Min Active Students: {MIN_ACTIVE_STUDENTS}</span>
+        </div>
+      </div>
+
+      {/* Persistent Alert Banners */}
+      {showTargetAlert && (
+        <div
+          className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-start justify-between gap-3"
+          data-ocid="fe.target_alert.error_state"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">
+                Daily Target Not Met
+              </p>
+              <p className="text-xs text-red-600 mt-0.5">
+                {stats.today} / {dailyTarget} registrations completed today.
+                Target required: {dailyTarget}.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissedTargetAlert(true)}
+            className="text-red-400 hover:text-red-600 flex-shrink-0"
+            data-ocid="fe.target_alert.close_button"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {showStudentsAlert && (
+        <div
+          className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start justify-between gap-3"
+          data-ocid="fe.students_alert.error_state"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-700">
+                Active Students Below Minimum
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {stats.paid} / {minActiveStudents} active (paid) students. You
+                need {minActiveStudents - stats.paid} more paid students to meet
+                the minimum requirement.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissedStudentsAlert(true)}
+            className="text-amber-400 hover:text-amber-600 flex-shrink-0"
+            data-ocid="fe.students_alert.close_button"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Stats */}
       <div
-        className="grid grid-cols-2 lg:grid-cols-5 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-6 gap-4"
         data-ocid="fe.dashboard.section"
       >
         <StatCard
@@ -258,12 +362,12 @@ export default function FEDashboard() {
           data-ocid="fe.today_registrations.card"
         />
         <StatCard
-          title="Paid"
+          title="Active Students"
           value={stats.paid}
-          icon={IndianRupee}
-          subtitle="Paid students"
-          color="green"
-          data-ocid="fe.paid_students.card"
+          icon={UserCheck}
+          subtitle={`Min ${minActiveStudents} required`}
+          color={stats.paid >= minActiveStudents ? "green" : "orange"}
+          data-ocid="fe.active_students.card"
         />
         <StatCard
           title="Pending"
@@ -274,12 +378,20 @@ export default function FEDashboard() {
           data-ocid="fe.pending_students.card"
         />
         <StatCard
-          title="Today's Incentive"
+          title="Today's Commission"
           value={`\u20b9${stats.todayIncentive}`}
           icon={Sparkles}
-          subtitle={`${stats.todayPaidRegs} paid today`}
+          subtitle={`\u20b9${COMMISSION_RATE}/paid reg`}
           color="green"
           data-ocid="fe.today_incentive.card"
+        />
+        <StatCard
+          title="Total Earned"
+          value={`\u20b9${stats.totalEarned.toLocaleString("en-IN")}`}
+          icon={IndianRupee}
+          subtitle={`${stats.paid} paid students`}
+          color="teal"
+          data-ocid="fe.total_earned.card"
         />
       </div>
 
@@ -466,20 +578,53 @@ export default function FEDashboard() {
           <Target className="h-4 w-4 text-primary" />
           <h3 className="font-semibold text-foreground">Target Progress</h3>
         </div>
+
+        {/* Daily */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm font-medium text-foreground">Daily</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Daily</span>
+              {stats.today === 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-red-50 border-red-200 text-red-600 px-1.5 py-0"
+                >
+                  No progress
+                </Badge>
+              )}
+              {stats.today > 0 && stats.today < dailyTarget && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-amber-50 border-amber-200 text-amber-600 px-1.5 py-0"
+                >
+                  {Math.round((stats.today / dailyTarget) * 100)}%
+                </Badge>
+              )}
+              {stats.today >= dailyTarget && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-green-50 border-green-200 text-green-600 px-1.5 py-0 gap-0.5"
+                >
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Met
+                </Badge>
+              )}
+            </div>
             <span className="text-sm text-muted-foreground">
               {stats.today} / {dailyTarget}
             </span>
           </div>
-          <Progress value={dailyProgress} className="h-2.5" />
+          <Progress
+            value={dailyProgress}
+            className={`h-2.5 ${getProgressColor(stats.today, dailyTarget)}`}
+          />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.today >= dailyTarget
               ? "\uD83C\uDF89 Target achieved!"
               : `${dailyTarget - stats.today} more to reach daily target`}
           </p>
         </div>
+
+        {/* Weekly */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-medium text-foreground">Weekly</span>
@@ -487,13 +632,18 @@ export default function FEDashboard() {
               {stats.weekCount} / {weeklyTarget}
             </span>
           </div>
-          <Progress value={weeklyProgress} className="h-2.5" />
+          <Progress
+            value={weeklyProgress}
+            className={`h-2.5 ${getProgressColor(stats.weekCount, weeklyTarget)}`}
+          />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.weekCount >= weeklyTarget
               ? "\uD83C\uDF89 Weekly target achieved!"
               : `${weeklyTarget - stats.weekCount} more for weekly target`}
           </p>
         </div>
+
+        {/* Monthly */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm font-medium text-foreground">Monthly</span>
@@ -501,7 +651,10 @@ export default function FEDashboard() {
               {stats.monthCount} / {monthlyTarget}
             </span>
           </div>
-          <Progress value={monthlyProgress} className="h-2.5" />
+          <Progress
+            value={monthlyProgress}
+            className={`h-2.5 ${getProgressColor(stats.monthCount, monthlyTarget)}`}
+          />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.monthCount >= monthlyTarget
               ? "\uD83C\uDF89 Monthly target achieved!"
@@ -577,7 +730,13 @@ export default function FEDashboard() {
                     </td>
                     <td className="p-4">
                       <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.feePlan === "Premium" ? "bg-purple-100 text-purple-700" : r.feePlan === "Standard" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          r.feePlan === "Premium"
+                            ? "bg-purple-100 text-purple-700"
+                            : r.feePlan === "Standard"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
                       >
                         {r.feePlan}
                       </span>

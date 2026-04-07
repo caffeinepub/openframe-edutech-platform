@@ -12,6 +12,7 @@ import AnalyticsPage from "./pages/admin/AnalyticsPage";
 import AttendancePage from "./pages/admin/AttendancePage";
 import CertificatesPage from "./pages/admin/CertificatesPage";
 import CoursesPage from "./pages/admin/CoursesPage";
+import FEPerformancePage from "./pages/admin/FEPerformancePage";
 import FieldExecutivesPage from "./pages/admin/FieldExecutivesPage";
 import LeaderboardPage from "./pages/admin/LeaderboardPage";
 import MapPage from "./pages/admin/MapPage";
@@ -127,6 +128,12 @@ const adminPayrollRoute = createRoute({
   component: PayrollPage,
 });
 
+const adminFEPerformanceRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/fe-performance",
+  component: FEPerformancePage,
+});
+
 const feLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "fe-layout",
@@ -223,6 +230,7 @@ export const routeTree = rootRoute.addChildren([
     adminAttendanceRoute,
     adminMapRoute,
     adminPayrollRoute,
+    adminFEPerformanceRoute,
   ]),
   feLayoutRoute.addChildren([
     feDashboardRoute,

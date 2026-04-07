@@ -43,7 +43,8 @@ export function computeMonthlySalary(
   const config = configs.find((c) => c.feId === feId) ?? {
     feId,
     fixedSalary: fe.fixedSalary ?? 0,
-    incentivePerRegistration: fe.incentivePerRegistration ?? 0,
+    // Default commission rate is ₹10/paid registration
+    incentivePerRegistration: fe.incentivePerRegistration ?? 10,
     bonusSlabs: [],
     top1Bonus: 500,
     top2Bonus: 300,
@@ -180,8 +181,9 @@ export function computeTodayEarnings(feId: number): {
   const configs = db.getSalaryConfigs();
   const fe = db.getFEs().find((f) => f.id === feId);
   const config = configs.find((c) => c.feId === feId);
+  // Default commission rate: ₹10/paid registration
   const incentiveRate =
-    config?.incentivePerRegistration ?? fe?.incentivePerRegistration ?? 0;
+    config?.incentivePerRegistration ?? fe?.incentivePerRegistration ?? 10;
 
   const today = new Date().toDateString();
   const allRegs = db.getRegistrations().filter((r) => r.feId === feId);
@@ -206,16 +208,16 @@ export function getAppliedSlab(
   paidCount: number,
   slabs: SalaryConfig["bonusSlabs"],
 ): string {
-  let label = "No slab (0–50 registrations)";
+  let label = "No slab (0\u201350 registrations)";
   for (const slab of slabs) {
     if (
       paidCount >= slab.minRegistrations &&
       (slab.maxRegistrations === null || paidCount <= slab.maxRegistrations)
     ) {
       if (slab.bonusPerRegistration === 0) {
-        label = `No bonus (${slab.minRegistrations}–${slab.maxRegistrations ?? "∞"} regs)`;
+        label = `No bonus (${slab.minRegistrations}\u2013${slab.maxRegistrations ?? "\u221e"} regs)`;
       } else {
-        label = `₹${slab.bonusPerRegistration}/reg (${slab.minRegistrations}–${slab.maxRegistrations ?? "∞"} regs)`;
+        label = `\u20b9${slab.bonusPerRegistration}/reg (${slab.minRegistrations}\u2013${slab.maxRegistrations ?? "\u221e"} regs)`;
       }
     }
   }
