@@ -9,7 +9,6 @@ import {
   LogIn,
   LogOut,
   Medal,
-  Sparkles,
   Target,
   TrendingUp,
   Trophy,
@@ -57,6 +56,9 @@ export default function FEDashboard() {
     basicEarned: 0,
     standardEarned: 0,
     premiumEarned: 0,
+    basicTotal: 0,
+    standardTotal: 0,
+    premiumTotal: 0,
   });
 
   const loadData = useCallback(() => {
@@ -86,7 +88,7 @@ export default function FEDashboard() {
       (r) => new Date(r.createdAt) >= monthAgo,
     ).length;
 
-    // Per-plan earnings
+    // Per-plan paid earnings
     const basicPaid = paidRegs.filter((r) => r.feePlan === "Basic").length;
     const standardPaid = paidRegs.filter(
       (r) => r.feePlan === "Standard",
@@ -95,6 +97,13 @@ export default function FEDashboard() {
     const basicEarned = basicPaid * 50;
     const standardEarned = standardPaid * 100;
     const premiumEarned = premiumPaid * 150;
+
+    // Per-plan total registrations (all, not just paid)
+    const basicTotal = allRegs.filter((r) => r.feePlan === "Basic").length;
+    const standardTotal = allRegs.filter(
+      (r) => r.feePlan === "Standard",
+    ).length;
+    const premiumTotal = allRegs.filter((r) => r.feePlan === "Premium").length;
 
     // Today's salary incentive
     const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
@@ -126,6 +135,9 @@ export default function FEDashboard() {
       basicEarned,
       standardEarned,
       premiumEarned,
+      basicTotal,
+      standardTotal,
+      premiumTotal,
     });
 
     // Auto-alerts (toast)
@@ -348,9 +360,9 @@ export default function FEDashboard() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Stats — Row 1: 4 core cards */}
       <div
-        className="grid grid-cols-2 lg:grid-cols-6 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
         data-ocid="fe.dashboard.section"
       >
         <StatCard
@@ -385,21 +397,33 @@ export default function FEDashboard() {
           color="orange"
           data-ocid="fe.pending_students.card"
         />
+      </div>
+
+      {/* Stats — Row 2: 3 plan registration cards */}
+      <div className="grid grid-cols-3 gap-4">
         <StatCard
-          title="Today's Commission"
-          value={`\u20b9${stats.todayIncentive}`}
-          icon={Sparkles}
-          subtitle={`\u20b9${COMMISSION_RATE}/paid reg`}
-          color="green"
-          data-ocid="fe.today_incentive.card"
+          title="Basic Plan"
+          value={stats.basicTotal}
+          icon={Users}
+          subtitle="\u20b950/student"
+          color="blue"
+          data-ocid="fe.basic_plan.card"
         />
         <StatCard
-          title="Total Earned"
-          value={`\u20b9${stats.totalEarned.toLocaleString("en-IN")}`}
-          icon={IndianRupee}
-          subtitle={`${stats.paid} paid students`}
+          title="Standard Plan"
+          value={stats.standardTotal}
+          icon={Users}
+          subtitle="\u20b9100/student"
           color="teal"
-          data-ocid="fe.total_earned.card"
+          data-ocid="fe.standard_plan.card"
+        />
+        <StatCard
+          title="Premium Plan"
+          value={stats.premiumTotal}
+          icon={Users}
+          subtitle="\u20b9150/student"
+          color="purple"
+          data-ocid="fe.premium_plan.card"
         />
       </div>
 
@@ -562,60 +586,33 @@ export default function FEDashboard() {
           </div>
         </div>
 
-        {/* Per-Plan Breakdown */}
+        {/* Fee Plans Reference */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Earnings by Fee Plan
+            Fee Plans
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-blue-800">
-                  Basic
-                </span>
-                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                  \u20b950/student
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-blue-700">
-                \u20b9{stats.basicEarned.toLocaleString("en-IN")}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                {stats.basicPaid} student{stats.basicPaid !== 1 ? "s" : ""}
-              </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col items-center justify-center">
+              <span className="text-sm font-semibold text-blue-800 mb-1">
+                Basic
+              </span>
+              <span className="text-2xl font-bold text-blue-700">\u20b950</span>
             </div>
-            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-teal-800">
-                  Standard
-                </span>
-                <span className="text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded">
-                  \u20b9100/student
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-teal-700">
-                \u20b9{stats.standardEarned.toLocaleString("en-IN")}
-              </p>
-              <p className="text-xs text-teal-600 mt-1">
-                {stats.standardPaid} student
-                {stats.standardPaid !== 1 ? "s" : ""}
-              </p>
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex flex-col items-center justify-center">
+              <span className="text-sm font-semibold text-teal-800 mb-1">
+                Standard
+              </span>
+              <span className="text-2xl font-bold text-teal-700">
+                \u20b9100
+              </span>
             </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-purple-800">
-                  Premium
-                </span>
-                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
-                  \u20b9150/student
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-purple-700">
-                \u20b9{stats.premiumEarned.toLocaleString("en-IN")}
-              </p>
-              <p className="text-xs text-purple-600 mt-1">
-                {stats.premiumPaid} student{stats.premiumPaid !== 1 ? "s" : ""}
-              </p>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col items-center justify-center">
+              <span className="text-sm font-semibold text-purple-800 mb-1">
+                Premium
+              </span>
+              <span className="text-2xl font-bold text-purple-700">
+                \u20b9150
+              </span>
             </div>
           </div>
         </div>
