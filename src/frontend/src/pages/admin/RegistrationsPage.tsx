@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 import {
   CheckCircle,
   Filter,
@@ -48,14 +49,11 @@ function MediumBadge({ medium }: { medium?: string }) {
 }
 
 function FeePlanBadge({ feePlan, price }: { feePlan?: string; price: number }) {
-  if (!feePlan) return <span>₹{price.toLocaleString("en-IN")}</span>;
+  if (!feePlan) return <span>{formatCurrency(price)}</span>;
   return (
     <span className="text-xs">
       <span className="font-medium">{feePlan}</span>
-      <span className="text-muted-foreground">
-        {" "}
-        — ₹{price.toLocaleString("en-IN")}
-      </span>
+      <span className="text-muted-foreground"> — {formatCurrency(price)}</span>
     </span>
   );
 }
@@ -389,7 +387,7 @@ export default function RegistrationsPage() {
                 {approveReg?.feePlan && (
                   <p>
                     <span className="font-medium">Fee Plan:</span>{" "}
-                    {approveReg.feePlan} — ₹{approveReg.price}
+                    {approveReg.feePlan} — {formatCurrency(approveReg.price)}
                   </p>
                 )}
               </div>

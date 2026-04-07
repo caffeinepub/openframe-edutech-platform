@@ -33,24 +33,17 @@ export interface Student {
   'referredBy' : bigint,
 }
 export type StudentId = bigint;
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignBatch' : ActorMethod<[StudentId, string], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createCourse' : ActorMethod<
     [string, CourseType, bigint, Array<string>, bigint],
     undefined
   >,
   'getAllCourses' : ActorMethod<[], Array<Course>>,
   'getAllStudents' : ActorMethod<[], Array<Student>>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCourse' : ActorMethod<[CourseId], [] | [Course]>,
   'getDashboard' : ActorMethod<[], DashboardStats>,
   'getStudent' : ActorMethod<[StudentId], [] | [Student]>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
   'processPayment' : ActorMethod<[StudentId, bigint], undefined>,
   'registerStudent' : ActorMethod<[string, bigint], StudentId>,
   'registerStudentForCourse' : ActorMethod<[StudentId, CourseId], undefined>,

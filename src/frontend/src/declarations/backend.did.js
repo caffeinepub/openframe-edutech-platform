@@ -9,11 +9,6 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const StudentId = IDL.Nat;
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
 export const CourseType = IDL.Variant({
   'premium' : IDL.Null,
   'basic' : IDL.Null,
@@ -40,9 +35,7 @@ export const DashboardStats = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignBatch' : IDL.Func([StudentId, IDL.Text], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createCourse' : IDL.Func(
       [IDL.Text, CourseType, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
       [],
@@ -50,11 +43,9 @@ export const idlService = IDL.Service({
     ),
   'getAllCourses' : IDL.Func([], [IDL.Vec(Course)], ['query']),
   'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCourse' : IDL.Func([CourseId], [IDL.Opt(Course)], ['query']),
   'getDashboard' : IDL.Func([], [DashboardStats], ['query']),
   'getStudent' : IDL.Func([StudentId], [IDL.Opt(Student)], ['query']),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'processPayment' : IDL.Func([StudentId, IDL.Nat], [], []),
   'registerStudent' : IDL.Func([IDL.Text, IDL.Nat], [StudentId], []),
   'registerStudentForCourse' : IDL.Func([StudentId, CourseId], [], []),
@@ -65,11 +56,6 @@ export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   const StudentId = IDL.Nat;
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
   const CourseType = IDL.Variant({
     'premium' : IDL.Null,
     'basic' : IDL.Null,
@@ -96,9 +82,7 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignBatch' : IDL.Func([StudentId, IDL.Text], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createCourse' : IDL.Func(
         [IDL.Text, CourseType, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
         [],
@@ -106,11 +90,9 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getAllCourses' : IDL.Func([], [IDL.Vec(Course)], ['query']),
     'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCourse' : IDL.Func([CourseId], [IDL.Opt(Course)], ['query']),
     'getDashboard' : IDL.Func([], [DashboardStats], ['query']),
     'getStudent' : IDL.Func([StudentId], [IDL.Opt(Student)], ['query']),
-    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'processPayment' : IDL.Func([StudentId, IDL.Nat], [], []),
     'registerStudent' : IDL.Func([IDL.Text, IDL.Nat], [StudentId], []),
     'registerStudentForCourse' : IDL.Func([StudentId, CourseId], [], []),

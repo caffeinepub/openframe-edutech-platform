@@ -1,0 +1,129 @@
+// Version: 3.0.0
+type CourseId__455700325 = Nat;
+type CourseType__951088712 = {#basic; #premium; #standard};
+type Course__388460598 =
+  {
+    courseType : CourseType__951088712;
+    id : CourseId__455700325;
+    lessons : [Text];
+    name : Text;
+    passingScore : Nat;
+    price : Nat
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type FieldExecutive__683278692 =
+  {
+    bonus : Nat;
+    id : Nat;
+    name : Text;
+    referredStudents : [Student__975845730]
+  };
+type FieldExecutive__780201207 =
+  {
+    bonus : Nat;
+    id : Nat;
+    name : Text;
+    referredStudents : [Student__305301755]
+  };
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Notification__172313204 = {message : Text; recipient : Principal};
+type Notification__879889657 = {message : Text; recipient : Principal};
+type PaymentStatus__876794400 = {#completed; #failed; #pending};
+type Payment__159206904 =
+  {
+    amount : Nat;
+    paymentStatus : PaymentStatus__876794400;
+    studentId : StudentId__449615776;
+    txHash : ?Text
+  };
+type Registration__525232183 =
+  {
+    batch : ?Text;
+    courseId : CourseId__455700325;
+    paid : Bool;
+    studentId : StudentId__449615776
+  };
+type StudentId__449615776 = Nat;
+type Student__305301755 = {id : Nat; name : Text; referredBy : Nat};
+type Student__975845730 =
+  {id : StudentId__449615776; name : Text; referredBy : Nat};
+actor ({
+  stable _fieldExecutives :
+    {
+      var root : Node__46230540<Nat, FieldExecutive__683278692>;
+      var size : Nat__490723111
+    };
+  stable _notifications :
+    {
+      var root : Node__46230540<Principal, [Notification__879889657]>;
+      var size : Nat__490723111
+    };
+  stable var adminPrincipal : ?Principal;
+  stable courses :
+    {
+      var root : Node__46230540<CourseId__455700325, Course__388460598>;
+      var size : Nat__490723111
+    };
+  in fieldExecutives : Map__605269027<Nat, FieldExecutive__780201207>;
+  in notifications : Map__605269027<Principal, [Notification__172313204]>;
+  stable payments :
+    {
+      var root : Node__46230540<StudentId__449615776, [Payment__159206904]>;
+      var size : Nat__490723111
+    };
+  stable registrations :
+    {
+      var root :
+        Node__46230540<StudentId__449615776, [Registration__525232183]>;
+      var size : Nat__490723111
+    };
+  stable students :
+    {
+      var root : Node__46230540<StudentId__449615776, Student__975845730>;
+      var size : Nat__490723111
+    }
+}, {
+  stable _fieldExecutives :
+    {
+      var root : Node__46230540<Nat, FieldExecutive__683278692>;
+      var size : Nat__490723111
+    };
+  stable _notifications :
+    {
+      var root : Node__46230540<Principal, [Notification__879889657]>;
+      var size : Nat__490723111
+    };
+  stable var adminPrincipal : ?Principal;
+  stable courses :
+    {
+      var root : Node__46230540<CourseId__455700325, Course__388460598>;
+      var size : Nat__490723111
+    };
+  stable payments :
+    {
+      var root : Node__46230540<StudentId__449615776, [Payment__159206904]>;
+      var size : Nat__490723111
+    };
+  stable registrations :
+    {
+      var root :
+        Node__46230540<StudentId__449615776, [Registration__525232183]>;
+      var size : Nat__490723111
+    };
+  stable students :
+    {
+      var root : Node__46230540<StudentId__449615776, Student__975845730>;
+      var size : Nat__490723111
+    }
+}) ;

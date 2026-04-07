@@ -34,6 +34,7 @@ const KEYS = {
   DEDUCTION_CONFIG: "openframe_deduction_config",
   SEEDED_V4: "openframe_seeded_v4",
   SEEDED_V5: "openframe_seeded_v5",
+  UNICODE_CLEANED: "openframe_unicode_cleaned_v1",
 };
 
 function getItem<T>(key: string): T[] {
@@ -47,6 +48,57 @@ function getItem<T>(key: string): T[] {
 
 function setItem<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ---- UNICODE CLEANUP MIGRATION ----
+// Scans all localStorage keys used by this app and decodes any double-encoded
+// unicode escape sequences (e.g. literal "\\u20b9" → "₹", "\\u2014" → "—").
+function cleanupUnicode(str: string): string {
+  if (typeof str !== "string") return str;
+  // Replace literal 6-char sequences like \u20b9 with actual unicode chars
+  return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+    String.fromCharCode(Number.parseInt(hex, 16)),
+  );
+}
+
+function cleanObjectUnicode<T>(obj: T): T {
+  if (typeof obj === "string") return cleanupUnicode(obj) as unknown as T;
+  if (Array.isArray(obj)) return obj.map(cleanObjectUnicode) as unknown as T;
+  if (obj !== null && typeof obj === "object") {
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(obj as Record<string, unknown>)) {
+      result[key] = cleanObjectUnicode((obj as Record<string, unknown>)[key]);
+    }
+    return result as T;
+  }
+  return obj;
+}
+
+export function migrateUnicodeCleanup(): void {
+  if (localStorage.getItem(KEYS.UNICODE_CLEANED)) return;
+  const keysToClean = [
+    KEYS.REGISTRATIONS,
+    KEYS.STUDENTS,
+    KEYS.FES,
+    KEYS.COURSES,
+    KEYS.NOTIFICATIONS,
+    KEYS.SALARY_CONFIGS,
+    KEYS.SALARY_RECORDS,
+  ];
+  for (const key of keysToClean) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      // Only process if the raw string contains a literal backslash-u sequence
+      if (!raw.includes("\\u")) continue;
+      const parsed = JSON.parse(raw) as unknown;
+      const cleaned = cleanObjectUnicode(parsed);
+      localStorage.setItem(key, JSON.stringify(cleaned));
+    } catch {
+      // If parsing fails, leave as-is
+    }
+  }
+  localStorage.setItem(KEYS.UNICODE_CLEANED, "true");
 }
 
 // ---- MIGRATION ----
@@ -110,6 +162,7 @@ function makeCourseTitle(
 
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
+  migrateUnicodeCleanup();
   migrateV1();
 
   if (localStorage.getItem(KEYS.SEEDED)) {

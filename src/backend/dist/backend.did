@@ -1,0 +1,43 @@
+type StudentId = nat;
+type Student = 
+ record {
+   id: StudentId;
+   name: text;
+   referredBy: nat;
+ };
+type DashboardStats = 
+ record {
+   totalRegistrations: nat;
+   totalRevenue: nat;
+   totalStudents: nat;
+ };
+type CourseType = 
+ variant {
+   basic;
+   premium;
+   standard;
+ };
+type CourseId = nat;
+type Course = 
+ record {
+   courseType: CourseType;
+   id: CourseId;
+   lessons: vec text;
+   name: text;
+   passingScore: nat;
+   price: nat;
+ };
+service : {
+  assignBatch: (studentId: StudentId, batch: text) -> ();
+  createCourse: (name: text, courseType: CourseType, price: nat, lessons:
+   vec text, passingScore: nat) -> ();
+  getAllCourses: () -> (vec Course) query;
+  getAllStudents: () -> (vec Student) query;
+  getCourse: (id: CourseId) -> (opt Course) query;
+  getDashboard: () -> (DashboardStats) query;
+  getStudent: (id: StudentId) -> (opt Student) query;
+  processPayment: (studentId: StudentId, amount: nat) -> ();
+  registerStudent: (name: text, referredBy: nat) -> (StudentId);
+  registerStudentForCourse: (studentId: StudentId, courseId: CourseId) -> ();
+  setAdmin: () -> ();
+}

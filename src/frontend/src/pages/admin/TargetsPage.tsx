@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils";
 import { IndianRupee, Info, Save, Target, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -128,7 +129,8 @@ export default function TargetsPage() {
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
             <IndianRupee className="h-3.5 w-3.5" />
             <span>
-              <strong>Commission:</strong> ₹{COMMISSION_RATE}/paid reg
+              <strong>Commission:</strong> {formatCurrency(COMMISSION_RATE)}
+              /paid reg
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">

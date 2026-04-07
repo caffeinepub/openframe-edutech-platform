@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils";
 import {
   AlertTriangle,
   BarChart3,
@@ -264,7 +265,7 @@ export default function FEPerformancePage() {
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
             <IndianRupee className="h-3.5 w-3.5" />
-            <span>₹{COMMISSION_RATE}/paid reg</span>
+            <span>{formatCurrency(COMMISSION_RATE)}/paid reg</span>
           </div>
           <div className="text-indigo-300 hidden sm:block">|</div>
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
@@ -353,7 +354,7 @@ export default function FEPerformancePage() {
             <span className="text-xs text-purple-700">Commission Today</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">
-            ₹{totalCommissionToday}
+            {formatCurrency(totalCommissionToday)}
           </p>
         </div>
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
@@ -362,7 +363,7 @@ export default function FEPerformancePage() {
             <span className="text-xs text-emerald-700">Total Commission</span>
           </div>
           <p className="text-xl font-bold text-emerald-700">
-            ₹{totalCommissionAllTime.toLocaleString("en-IN")}
+            {formatCurrency(totalCommissionAllTime)}
           </p>
           <p className="text-xs text-emerald-600 mt-0.5">All-time</p>
         </div>
@@ -482,12 +483,12 @@ export default function FEPerformancePage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-semibold text-green-700">
-                        ₹{row.commissionToday}
+                        {formatCurrency(row.commissionToday)}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-semibold text-emerald-700">
-                        ₹{row.totalCommission.toLocaleString("en-IN")}
+                        {formatCurrency(row.totalCommission)}
                       </span>
                       <p className="text-xs text-muted-foreground">
                         {row.paidStudents} paid

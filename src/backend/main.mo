@@ -6,9 +6,9 @@ import Map "mo:core/Map";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   type CourseId = Nat;
   type LessonId = Nat;
@@ -137,15 +137,11 @@ actor {
   // Persistent storage
   let courses = Map.empty<CourseId, Course>();
   let students = Map.empty<StudentId, Student>();
-  let fieldExecutives = Map.empty<Nat, FieldExecutive>();
-  let notifications = Map.empty<Principal, [Notification]>();
+  let _fieldExecutives = Map.empty<Nat, FieldExecutive>();
+  let _notifications = Map.empty<Principal, [Notification]>();
   let registrations = Map.empty<StudentId, [Registration]>();
   let payments = Map.empty<StudentId, [Payment]>();
   var adminPrincipal : ?Principal = null;
-
-  // Access control
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
 
   // Course management
   public shared ({ caller }) func createCourse(name : Text, courseType : CourseType, price : Nat, lessons : [Text], passingScore : Nat) : async () {
@@ -171,7 +167,7 @@ actor {
   };
 
   // Student registration
-  public shared ({ caller }) func registerStudent(name : Text, referredBy : Nat) : async StudentId {
+  public shared ({ caller = _ }) func registerStudent(name : Text, referredBy : Nat) : async StudentId {
     let id = students.size() + 1;
     let student : Student = {
       id;
@@ -182,7 +178,7 @@ actor {
     id;
   };
 
-  public shared ({ caller }) func registerStudentForCourse(studentId : StudentId, courseId : CourseId) : async () {
+  public shared ({ caller = _ }) func registerStudentForCourse(studentId : StudentId, courseId : CourseId) : async () {
     let registration : Registration = {
       studentId;
       courseId;
@@ -198,7 +194,7 @@ actor {
     registrations.add(studentId, newRegs);
   };
 
-  public shared ({ caller }) func processPayment(studentId : StudentId, amount : Nat) : async () {
+  public shared ({ caller = _ }) func processPayment(studentId : StudentId, amount : Nat) : async () {
     let payment : Payment = {
       studentId;
       amount;

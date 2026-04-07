@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
-import { Calendar, IndianRupee, Phone, Users } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { Calendar, Phone, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/EmptyState";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -137,8 +138,7 @@ export default function FieldExecutivesPage() {
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1 text-green-700 font-semibold">
-                          <IndianRupee className="h-3 w-3" />
-                          <span>{commission.toLocaleString("en-IN")}</span>
+                          <span>{formatCurrency(commission)}</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {paidCount} paid

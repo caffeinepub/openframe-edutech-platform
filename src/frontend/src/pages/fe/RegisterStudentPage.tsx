@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { IndianRupee, Loader2, MapPin, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -336,7 +337,7 @@ export default function RegisterStudentPage() {
                 {(Object.entries(FEE_PLANS) as [FeePlan, number][]).map(
                   ([plan, price]) => (
                     <SelectItem key={plan} value={plan}>
-                      {`${plan} — ₹${price}`}
+                      {`${plan} — ${formatCurrency(price)}`}
                     </SelectItem>
                   ),
                 )}

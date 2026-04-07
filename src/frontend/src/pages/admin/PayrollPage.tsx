@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { formatCurrency } from "@/lib/utils";
 import {
   Award,
   CheckCircle,
@@ -277,7 +278,7 @@ export default function PayrollPage() {
             <tr className="border-t">
               <td className="p-3">Fixed Salary</td>
               <td className="p-3 text-right text-green-700 font-medium">
-                +₹{record.fixedSalary.toLocaleString("en-IN")}
+                +{formatCurrency(record.fixedSalary)}
               </td>
             </tr>
             <tr className="border-t">
@@ -285,37 +286,37 @@ export default function PayrollPage() {
                 Incentive ({record.totalPaidRegistrations} paid regs)
               </td>
               <td className="p-3 text-right text-green-700 font-medium">
-                +₹{record.incentiveAmount.toLocaleString("en-IN")}
+                +{formatCurrency(record.incentiveAmount)}
               </td>
             </tr>
             <tr className="border-t">
               <td className="p-3">Slab Bonus</td>
               <td className="p-3 text-right text-green-700 font-medium">
-                +₹{record.bonusAmount.toLocaleString("en-IN")}
+                +{formatCurrency(record.bonusAmount)}
               </td>
             </tr>
             <tr className="border-t">
               <td className="p-3">Top-3 Performance Bonus</td>
               <td className="p-3 text-right text-green-700 font-medium">
-                +₹{record.top3BonusAmount.toLocaleString("en-IN")}
+                +{formatCurrency(record.top3BonusAmount)}
               </td>
             </tr>
             <tr className="border-t bg-red-50/40">
               <td className="p-3 text-red-700">Attendance Deduction</td>
               <td className="p-3 text-right text-red-700 font-medium">
-                -₹{record.attendanceDeduction.toLocaleString("en-IN")}
+                -{formatCurrency(record.attendanceDeduction)}
               </td>
             </tr>
             <tr className="border-t bg-red-50/40">
               <td className="p-3 text-red-700">Target Penalty</td>
               <td className="p-3 text-right text-red-700 font-medium">
-                -₹{record.penaltyAmount.toLocaleString("en-IN")}
+                -{formatCurrency(record.penaltyAmount)}
               </td>
             </tr>
             <tr className="border-t bg-green-50 font-bold">
               <td className="p-3">Final Payout</td>
               <td className="p-3 text-right text-green-700 text-base">
-                ₹{record.finalSalary.toLocaleString("en-IN")}
+                {formatCurrency(record.finalSalary)}
               </td>
             </tr>
           </tbody>
@@ -536,7 +537,7 @@ export default function PayrollPage() {
               <Icon className={`h-8 w-8 ${color} opacity-70`} />
               <div>
                 <p className={`text-xl font-bold ${color}`}>
-                  ₹{value.toLocaleString("en-IN")}
+                  {formatCurrency(value)}
                 </p>
                 <p className="text-xs text-muted-foreground">{label}</p>
               </div>
@@ -784,25 +785,25 @@ export default function PayrollPage() {
                         {rec.totalPaidRegistrations}
                       </td>
                       <td className="p-3 text-right">
-                        ₹{rec.fixedSalary.toLocaleString("en-IN")}
+                        {formatCurrency(rec.fixedSalary)}
                       </td>
                       <td className="p-3 text-right text-green-700">
-                        ₹{rec.incentiveAmount.toLocaleString("en-IN")}
+                        {formatCurrency(rec.incentiveAmount)}
                       </td>
                       <td className="p-3 text-right text-green-700">
-                        ₹{rec.bonusAmount.toLocaleString("en-IN")}
+                        {formatCurrency(rec.bonusAmount)}
                       </td>
                       <td className="p-3 text-right text-blue-700">
-                        ₹{rec.top3BonusAmount.toLocaleString("en-IN")}
+                        {formatCurrency(rec.top3BonusAmount)}
                       </td>
                       <td className="p-3 text-right text-red-600">
-                        -₹{rec.attendanceDeduction.toLocaleString("en-IN")}
+                        -{formatCurrency(rec.attendanceDeduction)}
                       </td>
                       <td className="p-3 text-right text-red-600">
-                        -₹{rec.penaltyAmount.toLocaleString("en-IN")}
+                        -{formatCurrency(rec.penaltyAmount)}
                       </td>
                       <td className="p-3 text-right font-bold text-foreground">
-                        ₹{rec.finalSalary.toLocaleString("en-IN")}
+                        {formatCurrency(rec.finalSalary)}
                       </td>
                       <td className="p-3 text-center">
                         <Badge
@@ -990,8 +991,7 @@ export default function PayrollPage() {
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Paid</span>
                   <span>
-                    ₹{paidAmt.toLocaleString("en-IN")} / ₹
-                    {totalPayroll.toLocaleString("en-IN")}
+                    {formatCurrency(paidAmt)} / {formatCurrency(totalPayroll)}
                   </span>
                 </div>
                 <Progress

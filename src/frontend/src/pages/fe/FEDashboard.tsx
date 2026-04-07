@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { formatCurrency } from "@/lib/utils";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -24,7 +25,7 @@ import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useApp } from "../../context/AppContext";
 import { computeTodayEarnings } from "../../lib/salaryCalc";
-import { db } from "../../lib/storage";
+import { db, migrateUnicodeCleanup } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
 
 // Commission rules constants
@@ -163,6 +164,10 @@ export default function FEDashboard() {
   }, [session]);
 
   useEffect(() => {
+    migrateUnicodeCleanup();
+  }, []);
+
+  useEffect(() => {
     loadData();
   }, [loadData]);
 
@@ -292,7 +297,7 @@ export default function FEDashboard() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
           <IndianRupee className="h-3.5 w-3.5" />
-          <span>Commission: ₹{COMMISSION_RATE}/paid reg</span>
+          <span>Commission: {formatCurrency(COMMISSION_RATE)}/paid reg</span>
         </div>
         <div className="text-blue-400 hidden sm:block">|</div>
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
@@ -403,7 +408,7 @@ export default function FEDashboard() {
         />
         <StatCard
           title="Total Sales"
-          value={`₹${stats.totalSales.toLocaleString("en-IN")}`}
+          value={formatCurrency(stats.totalSales)}
           icon={ShoppingBag}
           subtitle="From paid registrations"
           color="green"
@@ -571,7 +576,7 @@ export default function FEDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
-              ₹{stats.totalEarned.toLocaleString("en-IN")}
+              {formatCurrency(stats.totalEarned)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Overall commission from {stats.paid} paid registration
@@ -600,7 +605,7 @@ export default function FEDashboard() {
                 Total Sales
               </span>
               <span className="text-xl font-bold text-emerald-600">
-                ₹{stats.totalSales.toLocaleString("en-IN")}
+                {formatCurrency(stats.totalSales)}
               </span>
             </div>
           </div>

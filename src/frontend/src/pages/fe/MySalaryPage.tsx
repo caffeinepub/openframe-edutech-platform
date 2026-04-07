@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { formatCurrency } from "@/lib/utils";
 import {
   Calendar,
   CheckCircle2,
@@ -176,7 +177,7 @@ export default function MySalaryPage() {
               <tr className="border-t">
                 <td className="p-3">Fixed Salary</td>
                 <td className="p-3 text-right text-green-700 font-medium">
-                  +₹{currentRecord.fixedSalary.toLocaleString("en-IN")}
+                  +{formatCurrency(currentRecord.fixedSalary)}
                 </td>
               </tr>
               <tr className="border-t">
@@ -184,37 +185,37 @@ export default function MySalaryPage() {
                   Incentive ({currentRecord.totalPaidRegistrations} paid regs)
                 </td>
                 <td className="p-3 text-right text-green-700 font-medium">
-                  +₹{currentRecord.incentiveAmount.toLocaleString("en-IN")}
+                  +{formatCurrency(currentRecord.incentiveAmount)}
                 </td>
               </tr>
               <tr className="border-t">
                 <td className="p-3">Slab Bonus</td>
                 <td className="p-3 text-right text-green-700 font-medium">
-                  +₹{currentRecord.bonusAmount.toLocaleString("en-IN")}
+                  +{formatCurrency(currentRecord.bonusAmount)}
                 </td>
               </tr>
               <tr className="border-t">
                 <td className="p-3">Top-3 Bonus</td>
                 <td className="p-3 text-right text-green-700 font-medium">
-                  +₹{currentRecord.top3BonusAmount.toLocaleString("en-IN")}
+                  +{formatCurrency(currentRecord.top3BonusAmount)}
                 </td>
               </tr>
               <tr className="border-t bg-red-50/40">
                 <td className="p-3 text-red-700">Attendance Deduction</td>
                 <td className="p-3 text-right text-red-700">
-                  -₹{currentRecord.attendanceDeduction.toLocaleString("en-IN")}
+                  -{formatCurrency(currentRecord.attendanceDeduction)}
                 </td>
               </tr>
               <tr className="border-t bg-red-50/40">
                 <td className="p-3 text-red-700">Target Penalty</td>
                 <td className="p-3 text-right text-red-700">
-                  -₹{currentRecord.penaltyAmount.toLocaleString("en-IN")}
+                  -{formatCurrency(currentRecord.penaltyAmount)}
                 </td>
               </tr>
               <tr className="border-t bg-green-50 font-bold">
                 <td className="p-3">Final Payout</td>
                 <td className="p-3 text-right text-green-700 text-base">
-                  ₹{currentRecord.finalSalary.toLocaleString("en-IN")}
+                  {formatCurrency(currentRecord.finalSalary)}
                 </td>
               </tr>
             </tbody>
@@ -249,7 +250,7 @@ export default function MySalaryPage() {
             <IndianRupee className="h-8 w-8 text-green-600 opacity-80" />
             <div>
               <p className="text-2xl font-bold text-green-600">
-                ₹{todayStats.todayIncentive.toLocaleString("en-IN")}
+                {formatCurrency(todayStats.todayIncentive)}
               </p>
               <p className="text-xs text-muted-foreground">Today's Incentive</p>
             </div>
@@ -277,8 +278,8 @@ export default function MySalaryPage() {
             </div>
             <Progress value={monthlyProgress} className="h-2" />
             <p className="text-xs text-muted-foreground mt-1">
-              ₹{currentRecord?.incentiveAmount.toLocaleString("en-IN") ?? 0}{" "}
-              incentive earned
+              {formatCurrency(currentRecord?.incentiveAmount ?? 0)} incentive
+              earned
             </p>
           </div>
         </div>
@@ -306,7 +307,7 @@ export default function MySalaryPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Fixed Salary</span>
                   <span className="font-medium text-green-700">
-                    +₹{currentRecord.fixedSalary.toLocaleString("en-IN")}
+                    +{formatCurrency(currentRecord.fixedSalary)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -323,13 +324,13 @@ export default function MySalaryPage() {
                     Incentive Earned
                   </span>
                   <span className="font-medium text-green-700">
-                    +₹{currentRecord.incentiveAmount.toLocaleString("en-IN")}
+                    +{formatCurrency(currentRecord.incentiveAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Slab Bonus</span>
                   <span className="font-medium text-green-700">
-                    +₹{currentRecord.bonusAmount.toLocaleString("en-IN")}
+                    +{formatCurrency(currentRecord.bonusAmount)}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground pl-1">
@@ -342,7 +343,7 @@ export default function MySalaryPage() {
                     Top-3 Performance Bonus
                   </span>
                   <span className="font-medium text-blue-700">
-                    +₹{currentRecord.top3BonusAmount.toLocaleString("en-IN")}
+                    +{formatCurrency(currentRecord.top3BonusAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -350,15 +351,14 @@ export default function MySalaryPage() {
                     Attendance Deduction
                   </span>
                   <span className="font-medium text-red-600">
-                    -₹
-                    {currentRecord.attendanceDeduction.toLocaleString("en-IN")}
+                    -{formatCurrency(currentRecord.attendanceDeduction)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Target Penalty</span>
                   <span className="font-medium text-red-600">
                     {currentRecord.penaltyAmount > 0 ? (
-                      `-₹${currentRecord.penaltyAmount.toLocaleString("en-IN")}`
+                      `-${formatCurrency(currentRecord.penaltyAmount)}`
                     ) : (
                       <span className="flex items-center gap-1 text-green-600">
                         <CheckCircle2 className="h-3.5 w-3.5" /> Target Met
@@ -375,7 +375,7 @@ export default function MySalaryPage() {
                   Estimated Final Salary
                 </p>
                 <p className="text-3xl font-bold text-foreground">
-                  ₹{currentRecord.finalSalary.toLocaleString("en-IN")}
+                  {formatCurrency(currentRecord.finalSalary)}
                 </p>
               </div>
               <Dialog open={slipOpen} onOpenChange={setSlipOpen}>
@@ -463,10 +463,10 @@ export default function MySalaryPage() {
                         {r.totalPaidRegistrations}
                       </td>
                       <td className="p-4 text-right">
-                        ₹{r.incentiveAmount.toLocaleString("en-IN")}
+                        {formatCurrency(r.incentiveAmount)}
                       </td>
                       <td className="p-4 text-right font-semibold">
-                        ₹{r.finalSalary.toLocaleString("en-IN")}
+                        {formatCurrency(r.finalSalary)}
                       </td>
                       <td className="p-4 text-center">
                         <Badge
@@ -494,31 +494,32 @@ export default function MySalaryPage() {
               <div>
                 <span className="text-muted-foreground">Fixed Salary:</span>{" "}
                 <span className="font-medium">
-                  ₹{salaryConfig.fixedSalary.toLocaleString("en-IN")}/month
+                  {formatCurrency(salaryConfig.fixedSalary)}/month
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Incentive:</span>{" "}
                 <span className="font-medium">
-                  ₹{salaryConfig.incentivePerRegistration}/paid reg
+                  {formatCurrency(salaryConfig.incentivePerRegistration)}/paid
+                  reg
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Top-1 Bonus:</span>{" "}
                 <span className="font-medium text-yellow-700">
-                  ₹{salaryConfig.top1Bonus}
+                  {formatCurrency(salaryConfig.top1Bonus)}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Top-2 Bonus:</span>{" "}
                 <span className="font-medium text-gray-600">
-                  ₹{salaryConfig.top2Bonus}
+                  {formatCurrency(salaryConfig.top2Bonus)}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Top-3 Bonus:</span>{" "}
                 <span className="font-medium text-orange-600">
-                  ₹{salaryConfig.top3Bonus}
+                  {formatCurrency(salaryConfig.top3Bonus)}
                 </span>
               </div>
             </div>

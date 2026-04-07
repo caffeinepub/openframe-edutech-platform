@@ -9,6 +9,7 @@ import {
   Globe,
   GraduationCap,
   Layers,
+  Linkedin,
   Menu,
   TrendingUp,
   Users,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { SiFacebook, SiLinkedin, SiX } from "react-icons/si";
+import { SiFacebook, SiX } from "react-icons/si";
 
 const navLinks = ["Features", "Modules", "Solutions", "Pricing", "Contact"];
 
@@ -421,7 +422,7 @@ export default function LandingPage() {
               <div className="flex gap-3">
                 {[
                   {
-                    icon: SiLinkedin,
+                    icon: Linkedin,
                     href: "https://linkedin.com",
                     label: "LinkedIn",
                   },

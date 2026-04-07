@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 import { useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -98,7 +99,7 @@ export default function StudentDashboard() {
               <div className="flex items-center gap-2 text-sm">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold">
-                  ₹{registration.price.toLocaleString("en-IN")}
+                  {formatCurrency(registration.price)}
                 </span>
               </div>
               {course && (
