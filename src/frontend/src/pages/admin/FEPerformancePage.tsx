@@ -44,7 +44,7 @@ interface FEPerformanceRow {
 }
 
 function formatTime(isoString: string | null): string {
-  if (!isoString) return "\u2014";
+  if (!isoString) return "—";
   return new Date(isoString).toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
@@ -264,7 +264,7 @@ export default function FEPerformancePage() {
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
             <IndianRupee className="h-3.5 w-3.5" />
-            <span>\u20b9{COMMISSION_RATE}/paid reg</span>
+            <span>₹{COMMISSION_RATE}/paid reg</span>
           </div>
           <div className="text-indigo-300 hidden sm:block">|</div>
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
@@ -353,7 +353,7 @@ export default function FEPerformancePage() {
             <span className="text-xs text-purple-700">Commission Today</span>
           </div>
           <p className="text-2xl font-bold text-purple-700">
-            \u20b9{totalCommissionToday}
+            ₹{totalCommissionToday}
           </p>
         </div>
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
@@ -362,7 +362,7 @@ export default function FEPerformancePage() {
             <span className="text-xs text-emerald-700">Total Commission</span>
           </div>
           <p className="text-xl font-bold text-emerald-700">
-            \u20b9{totalCommissionAllTime.toLocaleString("en-IN")}
+            ₹{totalCommissionAllTime.toLocaleString("en-IN")}
           </p>
           <p className="text-xs text-emerald-600 mt-0.5">All-time</p>
         </div>
@@ -376,7 +376,7 @@ export default function FEPerformancePage() {
         <div className="flex items-center gap-2 p-4 border-b border-border bg-muted/20">
           <BarChart3 className="h-4 w-4 text-primary" />
           <span className="font-semibold text-sm text-foreground">
-            Daily Performance \u2014{" "}
+            Daily Performance —{" "}
             {new Date(`${selectedDate}T00:00:00`).toLocaleDateString("en-IN", {
               weekday: "long",
               day: "2-digit",
@@ -450,9 +450,7 @@ export default function FEPerformancePage() {
                     </TableCell>
                     <TableCell className="text-center">
                       {row.gap === 0 ? (
-                        <span className="text-green-600 font-medium">
-                          0 \u2714
-                        </span>
+                        <span className="text-green-600 font-medium">0 ✔</span>
                       ) : (
                         <span className="text-red-600 font-medium">
                           -{row.gap}
@@ -474,24 +472,22 @@ export default function FEPerformancePage() {
                     </TableCell>
                     <TableCell className="text-center">
                       {row.paidStudents >= MIN_ACTIVE_STUDENTS ? (
-                        <span className="text-green-600 text-sm">
-                          \u2705 Met
-                        </span>
+                        <span className="text-green-600 text-sm">✅ Met</span>
                       ) : (
                         <span className="text-amber-600 text-sm">
-                          \u26A0\uFE0F Below (
-                          {MIN_ACTIVE_STUDENTS - row.paidStudents} more)
+                          ⚠️ Below ({MIN_ACTIVE_STUDENTS - row.paidStudents}{" "}
+                          more)
                         </span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-semibold text-green-700">
-                        \u20b9{row.commissionToday}
+                        ₹{row.commissionToday}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
                       <span className="font-semibold text-emerald-700">
-                        \u20b9{row.totalCommission.toLocaleString("en-IN")}
+                        ₹{row.totalCommission.toLocaleString("en-IN")}
                       </span>
                       <p className="text-xs text-muted-foreground">
                         {row.paidStudents} paid

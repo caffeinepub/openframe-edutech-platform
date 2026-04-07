@@ -404,7 +404,7 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="period" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(val) => [`\u20b9${val}`, "Revenue"]} />
+              <Tooltip formatter={(val) => [`₹${val}`, "Revenue"]} />
               <Bar dataKey="revenue" fill="#1697A0" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -552,7 +552,7 @@ export default function AnalyticsPage() {
               </div>
               <div className="text-center p-3 bg-muted/30 rounded-lg">
                 <p className="text-xl font-bold text-green-600">
-                  \u20b9
+                  ₹
                   {filteredRegs
                     .filter((r) => r.paymentStatus === "Paid")
                     .reduce((s, r) => s + r.price, 0)

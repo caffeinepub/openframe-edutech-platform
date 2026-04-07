@@ -128,7 +128,7 @@ export default function TargetsPage() {
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
             <IndianRupee className="h-3.5 w-3.5" />
             <span>
-              <strong>Commission:</strong> \u20b9{COMMISSION_RATE}/paid reg
+              <strong>Commission:</strong> ₹{COMMISSION_RATE}/paid reg
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-indigo-700 text-sm">
@@ -292,11 +292,11 @@ export default function TargetsPage() {
                     <TableCell className="text-center">
                       {row.paidStudents >= MIN_ACTIVE_STUDENTS ? (
                         <span className="text-green-600 font-medium text-sm">
-                          \u2705 Met
+                          ✅ Met
                         </span>
                       ) : (
                         <span className="text-amber-600 font-medium text-sm">
-                          \u26A0\uFE0F Below
+                          ⚠️ Below
                         </span>
                       )}
                     </TableCell>

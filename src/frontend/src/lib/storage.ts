@@ -105,7 +105,7 @@ function makeCourseTitle(
   standard: number,
   medium: "English" | "Kannada",
 ): string {
-  return `${ORDINALS[standard - 1]} Standard \u2013 ${medium}`;
+  return `${ORDINALS[standard - 1]} Standard – ${medium}`;
 }
 
 // ---- SEED DATA ----
@@ -305,7 +305,7 @@ export function seedIfNeeded(): void {
       feName: "Rahul Sharma",
       feCode: "FE001",
       courseId: 2,
-      courseName: "2nd Standard \u2013 English",
+      courseName: "2nd Standard – English",
       courseType: "Basic",
       medium: "English",
       feePlan: "Standard",
@@ -313,7 +313,7 @@ export function seedIfNeeded(): void {
       status: "Approved",
       paymentStatus: "Paid",
       classLink: "https://meet.google.com/abc-defg-hij",
-      schedule: "Mon, Wed, Fri \u2014 7:00 PM to 9:00 PM IST",
+      schedule: "Mon, Wed, Fri — 7:00 PM to 9:00 PM IST",
       createdAt: "2024-03-01T10:00:00.000Z",
       updatedAt: "2024-03-03T14:00:00.000Z",
       latitude: 12.9716,
@@ -328,7 +328,7 @@ export function seedIfNeeded(): void {
       feName: "Priya Singh",
       feCode: "FE002",
       courseId: 1,
-      courseName: "1st Standard \u2013 English",
+      courseName: "1st Standard – English",
       courseType: "Basic",
       medium: "English",
       feePlan: "Basic",
@@ -351,7 +351,7 @@ export function seedIfNeeded(): void {
       feName: "Rahul Sharma",
       feCode: "FE001",
       courseId: 14,
-      courseName: "2nd Standard \u2013 Kannada",
+      courseName: "2nd Standard – Kannada",
       courseType: "Basic",
       medium: "Kannada",
       feePlan: "Premium",
@@ -388,7 +388,7 @@ export function seedIfNeeded(): void {
       registrationId: 1,
       courseId: 2,
       studentName: "Amit Kumar",
-      courseName: "2nd Standard \u2013 English",
+      courseName: "2nd Standard – English",
       certNumber: "CERT-2024-00001",
       issuedAt: "2024-04-01T15:30:00.000Z",
     },

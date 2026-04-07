@@ -208,16 +208,16 @@ export function getAppliedSlab(
   paidCount: number,
   slabs: SalaryConfig["bonusSlabs"],
 ): string {
-  let label = "No slab (0\u201350 registrations)";
+  let label = "No slab (0–50 registrations)";
   for (const slab of slabs) {
     if (
       paidCount >= slab.minRegistrations &&
       (slab.maxRegistrations === null || paidCount <= slab.maxRegistrations)
     ) {
       if (slab.bonusPerRegistration === 0) {
-        label = `No bonus (${slab.minRegistrations}\u2013${slab.maxRegistrations ?? "\u221e"} regs)`;
+        label = `No bonus (${slab.minRegistrations}–${slab.maxRegistrations ?? "∞"} regs)`;
       } else {
-        label = `\u20b9${slab.bonusPerRegistration}/reg (${slab.minRegistrations}\u2013${slab.maxRegistrations ?? "\u221e"} regs)`;
+        label = `₹${slab.bonusPerRegistration}/reg (${slab.minRegistrations}–${slab.maxRegistrations ?? "∞"} regs)`;
       }
     }
   }

@@ -140,7 +140,7 @@ export default function RegisterStudentPage() {
       (r) => r.studentPhone.trim() === form.studentPhone.trim(),
     );
     if (duplicate) {
-      toast.error("\u26A0\uFE0F This phone number is already registered");
+      toast.error("⚠️ This phone number is already registered");
       return;
     }
 

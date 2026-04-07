@@ -150,15 +150,13 @@ export default function FEDashboard() {
     if (!alertShownRef.current && fe) {
       const currentHour = new Date().getHours();
       if (todayCount >= (fe.dailyTarget ?? DEFAULT_DAILY_TARGET)) {
-        toast.success("\uD83C\uDF89 Daily target achieved! Great work!");
+        toast.success("🎉 Daily target achieved! Great work!");
         alertShownRef.current = true;
       } else if (
         currentHour >= 14 &&
         todayCount < (fe.dailyTarget ?? DEFAULT_DAILY_TARGET) * 0.5
       ) {
-        toast.warning(
-          "\u26A0\uFE0F You've reached less than 50% of your daily target",
-        );
+        toast.warning("⚠️ You've reached less than 50% of your daily target");
         alertShownRef.current = true;
       }
     }
@@ -286,7 +284,7 @@ export default function FEDashboard() {
           Welcome back, {session?.name}!
         </h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          {session?.feCode} \u2022 Field Executive Dashboard
+          {session?.feCode} • Field Executive Dashboard
         </p>
       </div>
 
@@ -294,7 +292,7 @@ export default function FEDashboard() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
           <IndianRupee className="h-3.5 w-3.5" />
-          <span>Commission: \u20b9{COMMISSION_RATE}/paid reg</span>
+          <span>Commission: ₹{COMMISSION_RATE}/paid reg</span>
         </div>
         <div className="text-blue-400 hidden sm:block">|</div>
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
@@ -405,7 +403,7 @@ export default function FEDashboard() {
         />
         <StatCard
           title="Total Sales"
-          value={`\u20b9${stats.totalSales.toLocaleString("en-IN")}`}
+          value={`₹${stats.totalSales.toLocaleString("en-IN")}`}
           icon={ShoppingBag}
           subtitle="From paid registrations"
           color="green"
@@ -419,7 +417,7 @@ export default function FEDashboard() {
           title="Basic Plan"
           value={stats.basicTotal}
           icon={Users}
-          subtitle="\u20b950/student"
+          subtitle="₹50/student"
           color="blue"
           data-ocid="fe.basic_plan.card"
         />
@@ -427,7 +425,7 @@ export default function FEDashboard() {
           title="Standard Plan"
           value={stats.standardTotal}
           icon={Users}
-          subtitle="\u20b9100/student"
+          subtitle="₹100/student"
           color="teal"
           data-ocid="fe.standard_plan.card"
         />
@@ -435,7 +433,7 @@ export default function FEDashboard() {
           title="Premium Plan"
           value={stats.premiumTotal}
           icon={Users}
-          subtitle="\u20b9150/student"
+          subtitle="₹150/student"
           color="purple"
           data-ocid="fe.premium_plan.card"
         />
@@ -573,7 +571,7 @@ export default function FEDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
-              \u20b9{stats.totalEarned.toLocaleString("en-IN")}
+              ₹{stats.totalEarned.toLocaleString("en-IN")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Overall commission from {stats.paid} paid registration
@@ -602,7 +600,7 @@ export default function FEDashboard() {
                 Total Sales
               </span>
               <span className="text-xl font-bold text-emerald-600">
-                \u20b9{stats.totalSales.toLocaleString("en-IN")}
+                ₹{stats.totalSales.toLocaleString("en-IN")}
               </span>
             </div>
           </div>
@@ -618,23 +616,19 @@ export default function FEDashboard() {
               <span className="text-sm font-semibold text-blue-800 mb-1">
                 Basic
               </span>
-              <span className="text-2xl font-bold text-blue-700">\u20b950</span>
+              <span className="text-2xl font-bold text-blue-700">₹50</span>
             </div>
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex flex-col items-center justify-center">
               <span className="text-sm font-semibold text-teal-800 mb-1">
                 Standard
               </span>
-              <span className="text-2xl font-bold text-teal-700">
-                \u20b9100
-              </span>
+              <span className="text-2xl font-bold text-teal-700">₹100</span>
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col items-center justify-center">
               <span className="text-sm font-semibold text-purple-800 mb-1">
                 Premium
               </span>
-              <span className="text-2xl font-bold text-purple-700">
-                \u20b9150
-              </span>
+              <span className="text-2xl font-bold text-purple-700">₹150</span>
             </div>
           </div>
         </div>
@@ -690,7 +684,7 @@ export default function FEDashboard() {
           />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.today >= dailyTarget
-              ? "\uD83C\uDF89 Target achieved!"
+              ? "🎉 Target achieved!"
               : `${dailyTarget - stats.today} more to reach daily target`}
           </p>
         </div>
@@ -709,7 +703,7 @@ export default function FEDashboard() {
           />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.weekCount >= weeklyTarget
-              ? "\uD83C\uDF89 Weekly target achieved!"
+              ? "🎉 Weekly target achieved!"
               : `${weeklyTarget - stats.weekCount} more for weekly target`}
           </p>
         </div>
@@ -728,7 +722,7 @@ export default function FEDashboard() {
           />
           <p className="text-xs text-muted-foreground mt-1">
             {stats.monthCount >= monthlyTarget
-              ? "\uD83C\uDF89 Monthly target achieved!"
+              ? "🎉 Monthly target achieved!"
               : `${monthlyTarget - stats.monthCount} more for monthly target`}
           </p>
         </div>

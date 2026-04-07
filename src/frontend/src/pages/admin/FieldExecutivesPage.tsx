@@ -43,8 +43,8 @@ export default function FieldExecutivesPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Field Executives</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          {fes.length} registered executives \u2014 FEs self-register via the
-          login page
+          {fes.length} registered executives — FEs self-register via the login
+          page
         </p>
       </div>
 

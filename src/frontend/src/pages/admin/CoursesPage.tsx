@@ -65,7 +65,7 @@ function makeCourseTitle(
   standard: number,
   medium: "English" | "Kannada",
 ): string {
-  return `${ORDINALS[standard - 1]} Standard \u2013 ${medium}`;
+  return `${ORDINALS[standard - 1]} Standard – ${medium}`;
 }
 
 interface CourseForm {

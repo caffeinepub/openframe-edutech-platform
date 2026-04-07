@@ -134,7 +134,7 @@ export default function MapPage() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {reg.feName} \u2022 {reg.courseName}
+                      {reg.feName} • {reg.courseName}
                     </p>
                     {reg.locationAddress && (
                       <p className="text-xs text-primary mt-1 flex items-center gap-1">
@@ -144,8 +144,7 @@ export default function MapPage() {
                     )}
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Lat: {reg.latitude?.toFixed(4)}, Lng:{" "}
-                      {reg.longitude?.toFixed(4)} \u2022{" "}
-                      {formatDate(reg.createdAt)}
+                      {reg.longitude?.toFixed(4)} • {formatDate(reg.createdAt)}
                     </p>
                   </div>
                 </div>
