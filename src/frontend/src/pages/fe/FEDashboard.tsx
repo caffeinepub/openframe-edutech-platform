@@ -9,6 +9,7 @@ import {
   LogIn,
   LogOut,
   Medal,
+  ShoppingBag,
   Target,
   TrendingUp,
   Trophy,
@@ -46,6 +47,7 @@ export default function FEDashboard() {
     paid: 0,
     pending: 0,
     totalEarned: 0,
+    totalSales: 0,
     weekCount: 0,
     monthCount: 0,
     todayIncentive: 0,
@@ -98,6 +100,9 @@ export default function FEDashboard() {
     const standardEarned = standardPaid * 100;
     const premiumEarned = premiumPaid * 150;
 
+    // Total Sales = sum of fee amounts for paid registrations
+    const totalSales = basicEarned + standardEarned + premiumEarned;
+
     // Per-plan total registrations (all, not just paid)
     const basicTotal = allRegs.filter((r) => r.feePlan === "Basic").length;
     const standardTotal = allRegs.filter(
@@ -125,6 +130,7 @@ export default function FEDashboard() {
       paid,
       pending,
       totalEarned,
+      totalSales,
       weekCount,
       monthCount,
       todayIncentive,
@@ -360,9 +366,9 @@ export default function FEDashboard() {
         </div>
       )}
 
-      {/* Stats — Row 1: 4 core cards */}
+      {/* Stats — Row 1: 5 core cards including Total Sales */}
       <div
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-5 gap-4"
         data-ocid="fe.dashboard.section"
       >
         <StatCard
@@ -396,6 +402,14 @@ export default function FEDashboard() {
           subtitle="Awaiting approval"
           color="orange"
           data-ocid="fe.pending_students.card"
+        />
+        <StatCard
+          title="Total Sales"
+          value={`\u20b9${stats.totalSales.toLocaleString("en-IN")}`}
+          icon={ShoppingBag}
+          subtitle="From paid registrations"
+          color="green"
+          data-ocid="fe.total_sales.card"
         />
       </div>
 
@@ -555,7 +569,7 @@ export default function FEDashboard() {
           <h3 className="font-semibold text-foreground">Total Earnings</h3>
         </div>
 
-        {/* Overall Commission Total */}
+        {/* Overall Commission Total + Total Sales */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
@@ -581,6 +595,14 @@ export default function FEDashboard() {
               </span>
               <span className="text-xl font-bold text-green-600">
                 {stats.paid}
+              </span>
+            </div>
+            <div className="flex flex-col items-center bg-emerald-50 border border-emerald-200 rounded-lg px-5 py-3">
+              <span className="text-xs font-medium text-muted-foreground mb-1">
+                Total Sales
+              </span>
+              <span className="text-xl font-bold text-emerald-600">
+                \u20b9{stats.totalSales.toLocaleString("en-IN")}
               </span>
             </div>
           </div>
