@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, sanitizeCurrency } from "@/lib/utils";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -297,7 +297,7 @@ export default function FEDashboard() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
           <IndianRupee className="h-3.5 w-3.5" />
-          <span>Commission: {formatCurrency(COMMISSION_RATE)}/paid reg</span>
+          <span>{"Commission: ₹10/paid reg"}</span>
         </div>
         <div className="text-blue-400 hidden sm:block">|</div>
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
@@ -408,7 +408,7 @@ export default function FEDashboard() {
         />
         <StatCard
           title="Total Sales"
-          value={formatCurrency(stats.totalSales)}
+          value={sanitizeCurrency(stats.totalSales)}
           icon={ShoppingBag}
           subtitle="From paid registrations"
           color="green"
@@ -422,7 +422,7 @@ export default function FEDashboard() {
           title="Basic Plan"
           value={stats.basicTotal}
           icon={Users}
-          subtitle="₹50/student"
+          subtitle={"₹50/student"}
           color="blue"
           data-ocid="fe.basic_plan.card"
         />
@@ -430,7 +430,7 @@ export default function FEDashboard() {
           title="Standard Plan"
           value={stats.standardTotal}
           icon={Users}
-          subtitle="₹100/student"
+          subtitle={"₹100/student"}
           color="teal"
           data-ocid="fe.standard_plan.card"
         />
@@ -438,7 +438,7 @@ export default function FEDashboard() {
           title="Premium Plan"
           value={stats.premiumTotal}
           icon={Users}
-          subtitle="₹150/student"
+          subtitle={"₹150/student"}
           color="purple"
           data-ocid="fe.premium_plan.card"
         />
@@ -576,7 +576,7 @@ export default function FEDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
-              {formatCurrency(stats.totalEarned)}
+              {sanitizeCurrency(stats.totalEarned)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Overall commission from {stats.paid} paid registration
@@ -605,7 +605,7 @@ export default function FEDashboard() {
                 Total Sales
               </span>
               <span className="text-xl font-bold text-emerald-600">
-                {formatCurrency(stats.totalSales)}
+                {sanitizeCurrency(stats.totalSales)}
               </span>
             </div>
           </div>
@@ -621,19 +621,21 @@ export default function FEDashboard() {
               <span className="text-sm font-semibold text-blue-800 mb-1">
                 Basic
               </span>
-              <span className="text-2xl font-bold text-blue-700">₹50</span>
+              <span className="text-2xl font-bold text-blue-700">{"₹50"}</span>
             </div>
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex flex-col items-center justify-center">
               <span className="text-sm font-semibold text-teal-800 mb-1">
                 Standard
               </span>
-              <span className="text-2xl font-bold text-teal-700">₹100</span>
+              <span className="text-2xl font-bold text-teal-700">{"₹100"}</span>
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col items-center justify-center">
               <span className="text-sm font-semibold text-purple-800 mb-1">
                 Premium
               </span>
-              <span className="text-2xl font-bold text-purple-700">₹150</span>
+              <span className="text-2xl font-bold text-purple-700">
+                {"₹150"}
+              </span>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ const KEYS = {
   DEDUCTION_CONFIG: "openframe_deduction_config",
   SEEDED_V4: "openframe_seeded_v4",
   SEEDED_V5: "openframe_seeded_v5",
-  UNICODE_CLEANED: "openframe_unicode_cleaned_v1",
+  UNICODE_CLEANED: "openframe_unicode_cleaned_v3",
 };
 
 function getItem<T>(key: string): T[] {
@@ -55,10 +55,21 @@ function setItem<T>(key: string, data: T[]): void {
 // unicode escape sequences (e.g. literal "\\u20b9" → "₹", "\\u2014" → "—").
 function cleanupUnicode(str: string): string {
   if (typeof str !== "string") return str;
-  // Replace literal 6-char sequences like \u20b9 with actual unicode chars
-  return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+  let result = str;
+  // Pass 1: URL-encoded forms
+  result = result.replace(/%E2%82%B9/gi, "₹");
+  result = result.replace(/%E2%80%94/gi, "—");
+  // Pass 2: double-backslash encoded (\\u20b9 as 7 literal chars)
+  result = result.replace(/\\\\u20[bB]9/g, "₹");
+  result = result.replace(/\\\\u2014/g, "—");
+  // Pass 3: single-backslash encoded (\u20b9 as 6 literal chars)
+  result = result.replace(/\\u20[bB]9/g, "₹");
+  result = result.replace(/\\u2014/g, "—");
+  // Pass 4: any remaining \uXXXX patterns (generic fallback)
+  result = result.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
     String.fromCharCode(Number.parseInt(hex, 16)),
   );
+  return result;
 }
 
 function cleanObjectUnicode<T>(obj: T): T {
@@ -76,6 +87,9 @@ function cleanObjectUnicode<T>(obj: T): T {
 
 export function migrateUnicodeCleanup(): void {
   if (localStorage.getItem(KEYS.UNICODE_CLEANED)) return;
+  // Clear old migration flags so we re-run with the improved cleaner
+  localStorage.removeItem("openframe_unicode_cleaned_v1");
+  localStorage.removeItem("openframe_unicode_cleaned_v2");
   const keysToClean = [
     KEYS.REGISTRATIONS,
     KEYS.STUDENTS,
@@ -84,18 +98,32 @@ export function migrateUnicodeCleanup(): void {
     KEYS.NOTIFICATIONS,
     KEYS.SALARY_CONFIGS,
     KEYS.SALARY_RECORDS,
+    KEYS.TIME_LOGS,
+    KEYS.ACTIVITY_LOGS,
+    KEYS.SESSION,
+    KEYS.DEDUCTION_CONFIG,
   ];
   for (const key of keysToClean) {
     try {
       const raw = localStorage.getItem(key);
       if (!raw) continue;
-      // Only process if the raw string contains a literal backslash-u sequence
-      if (!raw.includes("\\u")) continue;
+      // Process if the raw string contains any encoded form
+      const hasEncoding =
+        raw.includes("\\u") ||
+        raw.includes("%E2%82%B9") ||
+        raw.includes("%E2%80%94");
+      if (!hasEncoding) continue;
       const parsed = JSON.parse(raw) as unknown;
       const cleaned = cleanObjectUnicode(parsed);
       localStorage.setItem(key, JSON.stringify(cleaned));
     } catch {
-      // If parsing fails, leave as-is
+      // If parsing fails, try raw string cleanup
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) localStorage.setItem(key, cleanupUnicode(raw));
+      } catch {
+        // Leave as-is
+      }
     }
   }
   localStorage.setItem(KEYS.UNICODE_CLEANED, "true");
