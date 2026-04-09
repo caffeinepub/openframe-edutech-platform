@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  CalendarDays,
   CheckCircle2,
   Clock,
   IndianRupee,
@@ -30,7 +31,6 @@ import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
 import FEBlockingScreen from "./FEBlockingScreen";
 
 // Commission rules constants
-const COMMISSION_RATE = 10; // ₹10 per paid registration
 const MIN_ACTIVE_STUDENTS = 20;
 const DEFAULT_DAILY_TARGET = 5;
 
@@ -74,6 +74,9 @@ function FEDashboardContent() {
   const [stats, setStats] = useState({
     total: 0,
     today: 0,
+    todayPaidCount: 0,
+    todayEarnings: 0,
+    feIncentiveRate: 10,
     paid: 0,
     pending: 0,
     totalEarned: 0,
@@ -97,6 +100,8 @@ function FEDashboardContent() {
     if (!session?.id) return;
     const allRegs = db.getRegistrations().filter((r) => r.feId === session.id);
     const fe = db.getFEs().find((f) => f.id === session.id) ?? null;
+    const adminConfig = db.getAdminConfig();
+    const feIncentiveRate = adminConfig.feIncentiveRate;
     const today = new Date().toDateString();
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -107,11 +112,17 @@ function FEDashboardContent() {
       (r) => new Date(r.createdAt).toDateString() === today,
     );
     const todayCount = todayRegs.length;
+    const todayPaidRegsArr = todayRegs.filter(
+      (r) => r.paymentStatus === "Paid",
+    );
+    const todayPaidCount = todayPaidRegsArr.length;
+    const todayEarnings = todayPaidCount * feIncentiveRate;
+
     const paid = allRegs.filter((r) => r.paymentStatus === "Paid").length;
     const pending = allRegs.filter((r) => r.status === "Pending").length;
 
     const paidRegs = allRegs.filter((r) => r.paymentStatus === "Paid");
-    const totalEarned = paidRegs.length * COMMISSION_RATE;
+    const totalEarned = paidRegs.length * feIncentiveRate;
 
     const weekCount = allRegs.filter(
       (r) => new Date(r.createdAt) >= weekAgo,
@@ -140,7 +151,7 @@ function FEDashboardContent() {
     ).length;
     const premiumTotal = allRegs.filter((r) => r.feePlan === "Premium").length;
 
-    // Today's salary incentive
+    // Today's salary incentive (uses computeTodayEarnings which respects AdminConfig)
     const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
       session.id,
     );
@@ -157,6 +168,9 @@ function FEDashboardContent() {
     setStats({
       total: allRegs.length,
       today: todayCount,
+      todayPaidCount,
+      todayEarnings,
+      feIncentiveRate,
       paid,
       pending,
       totalEarned,
@@ -198,6 +212,12 @@ function FEDashboardContent() {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Real-time poll every 3 seconds for payment status updates
+  useEffect(() => {
+    const interval = setInterval(loadData, 3000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
   useEffect(() => {
@@ -326,7 +346,7 @@ function FEDashboardContent() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
           <IndianRupee className="h-3.5 w-3.5" />
-          <span>{"Commission: ₹10/paid reg"}</span>
+          <span>Commission: ₹{stats.feIncentiveRate}/paid reg</span>
         </div>
         <div className="text-blue-400 hidden sm:block">|</div>
         <div className="flex items-center gap-1.5 text-blue-700 font-medium">
@@ -397,6 +417,57 @@ function FEDashboardContent() {
           </button>
         </div>
       )}
+
+      {/* TODAY'S INCENTIVE — 3 real-time cards (polls every 3s) */}
+      <div
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        data-ocid="fe.today_incentive.section"
+      >
+        <StatCard
+          title="Today's Registrations"
+          value={stats.today}
+          icon={CalendarDays}
+          subtitle="Created today (all statuses)"
+          color="blue"
+          data-ocid="fe.today_total_regs.card"
+        />
+        <StatCard
+          title="Paid Registrations"
+          value={stats.todayPaidCount}
+          icon={UserCheck}
+          subtitle="Today's paid count"
+          color={stats.todayPaidCount > 0 ? "green" : "orange"}
+          data-ocid="fe.today_paid_regs.card"
+        />
+        <div
+          className={`rounded-xl border shadow-sm p-4 flex flex-col gap-1 ${
+            stats.todayEarnings > 0
+              ? "bg-green-50 border-green-200"
+              : "bg-muted/40 border-border"
+          }`}
+          data-ocid="fe.today_earnings.card"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <IndianRupee
+              className={`h-4 w-4 ${stats.todayEarnings > 0 ? "text-green-600" : "text-muted-foreground"}`}
+            />
+            <span
+              className={`text-sm font-semibold ${stats.todayEarnings > 0 ? "text-green-700" : "text-foreground"}`}
+            >
+              Today's Earnings
+            </span>
+          </div>
+          <p
+            className={`text-3xl font-bold ${stats.todayEarnings > 0 ? "text-green-600" : "text-foreground"}`}
+          >
+            ₹{stats.todayEarnings.toLocaleString("en-IN")}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {stats.todayPaidCount} paid &times; ₹{stats.feIncentiveRate}
+            /registration
+          </p>
+        </div>
+      </div>
 
       {/* Stats — Row 1: 5 core cards including Total Sales */}
       <div

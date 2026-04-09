@@ -68,7 +68,7 @@ export function TLProvider({ children }: { children: React.ReactNode }) {
   }, [tlSession, loadData]);
 
   useEffect(() => {
-    const interval = setInterval(loadData, 30000);
+    const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
   }, [loadData]);
 

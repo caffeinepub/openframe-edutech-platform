@@ -16,6 +16,7 @@ import {
   LogOut,
   MapPin,
   Menu,
+  Settings2,
   Target,
   TrendingUp,
   Trophy,
@@ -43,6 +44,11 @@ const navItems = [
   { href: "/admin/attendance", label: "Attendance", icon: Clock },
   { href: "/admin/map", label: "Map View", icon: MapPin },
   { href: "/admin/payroll", label: "Payroll", icon: IndianRupee },
+  {
+    href: "/admin/incentive-settings",
+    label: "Incentive Settings",
+    icon: Settings2,
+  },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
 ];
 

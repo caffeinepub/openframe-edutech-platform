@@ -179,6 +179,7 @@ export default function RegisterStudentPage() {
       latitude: location.lat,
       longitude: location.lng,
       locationAddress: location.address,
+      incentiveCalculated: false,
     };
 
     db.saveRegistrations([...allRegs, newReg]);

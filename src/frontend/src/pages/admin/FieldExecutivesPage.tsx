@@ -20,7 +20,7 @@ import { assignFEToTL, db, getUnassignedFEs } from "../../lib/storage";
 import type { FieldExecutive, TeamLeader } from "../../types/models";
 
 const MIN_ACTIVE_STUDENTS = 20;
-const COMMISSION_RATE = 10;
+const COMMISSION_RATE = db.getAdminConfig().feIncentiveRate;
 const POLL_INTERVAL_MS = 5000;
 
 // ---- helpers ----

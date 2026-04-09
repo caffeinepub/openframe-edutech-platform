@@ -75,6 +75,14 @@ export interface Registration {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string | null;
+  // v7 incentive field
+  incentiveCalculated: boolean;
+}
+
+export interface AdminConfig {
+  feIncentiveRate: number; // default 10
+  tlCommissionRate: number; // default 5
+  lastUpdated: string;
 }
 
 export interface Student {
@@ -192,14 +200,21 @@ export interface SalaryRecord {
 // ---- Team Leader System ----
 
 export interface TeamLeader {
-  id: string;
+  id: string; // "TL001", "TL002" — auto-generated
+  tlID: string; // same as id, for display
   name: string;
   phone: string;
-  referralCode: string;
+  email?: string;
+  address?: string;
+  referralCode: string; // "TL2026XXXX" format
   assignedFEIds: number[];
   monthlyTarget: number;
+  commissionRate: number; // ₹/registration
   totalCommission: number;
   walletBalance: number;
+  joiningDate: string; // ISO date string
+  status: "active" | "inactive";
+  createdBy: string; // "admin" | tlId
   createdAt: string;
 }
 

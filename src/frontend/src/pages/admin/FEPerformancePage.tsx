@@ -26,7 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "../../lib/storage";
 import type { FieldExecutive } from "../../types/models";
 
-const COMMISSION_RATE = 10;
+const COMMISSION_RATE = db.getAdminConfig().feIncentiveRate;
 const DEFAULT_DAILY_TARGET = 5;
 const MIN_ACTIVE_STUDENTS = 20;
 

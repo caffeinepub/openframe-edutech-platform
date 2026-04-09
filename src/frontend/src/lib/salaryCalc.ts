@@ -178,12 +178,16 @@ export function computeTodayEarnings(feId: number): {
   todayPaidRegistrations: number;
   todayIncentive: number;
 } {
+  const adminConfig = db.getAdminConfig();
   const configs = db.getSalaryConfigs();
   const fe = db.getFEs().find((f) => f.id === feId);
   const config = configs.find((c) => c.feId === feId);
-  // Default commission rate: ₹10/paid registration
+  // Use AdminConfig rate as the source of truth, fallback to per-FE config
   const incentiveRate =
-    config?.incentivePerRegistration ?? fe?.incentivePerRegistration ?? 10;
+    adminConfig.feIncentiveRate ??
+    config?.incentivePerRegistration ??
+    fe?.incentivePerRegistration ??
+    10;
 
   const today = new Date().toDateString();
   const allRegs = db.getRegistrations().filter((r) => r.feId === feId);

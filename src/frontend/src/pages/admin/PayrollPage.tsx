@@ -64,7 +64,7 @@ const MONTH_LABELS: Record<string, string> = {
   "12": "December",
 };
 
-const COMMISSION_RATE = 10;
+const COMMISSION_RATE = db.getAdminConfig().feIncentiveRate;
 
 function formatMonth(m: string) {
   const [year, mon] = m.split("-");
@@ -478,11 +478,11 @@ export default function PayrollPage() {
             <IndianRupee className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-amber-800">
-                Default Commission Rate: ₹10 per paid registration
+                Global Incentive Rate: ₹{COMMISSION_RATE}/registration
               </p>
               <p className="text-xs text-amber-700 mt-0.5">
-                All FE commission calculations use this rate unless individually
-                overridden in the salary configuration below.
+                All FE commission calculations use this rate. Change it in{" "}
+                <span className="font-semibold">Incentive Settings</span>.
               </p>
             </div>
           </div>

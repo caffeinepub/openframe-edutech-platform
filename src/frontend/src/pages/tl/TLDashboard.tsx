@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { StatCard } from "../../components/StatCard";
 import { useTL } from "../../context/TLContext";
+import { db } from "../../lib/storage";
 import type { FieldExecutive } from "../../types/models";
 
 const DAILY_TARGET_PER_FE = 5;
@@ -114,8 +115,9 @@ export function TLDashboard() {
       : 0;
   const remaining = Math.max(0, totalTarget - todayCount);
 
-  const todayEarnings = todayPaid.length * 10;
-  const monthEarnings = monthPaid.length * 10;
+  const tlCommissionRate = db.getAdminConfig().tlCommissionRate;
+  const todayEarnings = todayPaid.length * tlCommissionRate;
+  const monthEarnings = monthPaid.length * tlCommissionRate;
 
   // ---- per-FE stats ----
   const feStats = useMemo(() => {
@@ -336,7 +338,7 @@ export function TLDashboard() {
             title="Today's Earnings"
             value={`₹${todayEarnings.toLocaleString("en-IN")}`}
             icon={IndianRupee}
-            subtitle={`${todayPaid.length} paid regs today`}
+            subtitle={`${todayPaid.length} paid regs × ₹${tlCommissionRate}`}
             color="orange"
             data-ocid="tl.stat.today_earnings"
           />
@@ -344,7 +346,7 @@ export function TLDashboard() {
             title="Monthly Earnings"
             value={`₹${monthEarnings.toLocaleString("en-IN")}`}
             icon={Award}
-            subtitle={`${monthPaid.length} paid this month`}
+            subtitle={`${monthPaid.length} paid × ₹${tlCommissionRate}/reg`}
             color="purple"
             data-ocid="tl.stat.monthly_earnings"
           />

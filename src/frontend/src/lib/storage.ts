@@ -1,5 +1,6 @@
 import type {
   ActivityLog,
+  AdminConfig,
   BonusSlab,
   Certificate,
   Commission,
@@ -39,10 +40,12 @@ const KEYS = {
   SEEDED_V5: "openframe_seeded_v5",
   UNICODE_CLEANED: "openframe_unicode_cleaned_v4",
   SEEDED_V6: "openframe_seeded_v6",
+  MIGRATED_V7: "openframe_migrated_v7",
   TLS: "openframe_tls",
   COMMISSIONS: "openframe_commissions",
   TL_SESSION: "openframe_tl_session",
   TL_SEEDED: "openframe_tl_seeded_v1",
+  ADMIN_CONFIG: "openframe_admin_config",
 };
 
 function getItem<T>(key: string): T[] {
@@ -142,6 +145,23 @@ function migrateV6(): void {
   localStorage.setItem(KEYS.SEEDED_V6, "true");
 }
 
+// ---- MIGRATION V7: incentiveCalculated on registrations + AdminConfig defaults ----
+function migrateV7(): void {
+  if (localStorage.getItem(KEYS.MIGRATED_V7)) return;
+  // Clear all openframe_* keys except session and TL_SESSION to flush stale data
+  const allKeys = Object.keys(localStorage);
+  for (const key of allKeys) {
+    if (
+      key.startsWith("openframe_") &&
+      key !== KEYS.SESSION &&
+      key !== KEYS.TL_SESSION
+    ) {
+      localStorage.removeItem(key);
+    }
+  }
+  localStorage.setItem(KEYS.MIGRATED_V7, "true");
+}
+
 const ORDINALS = [
   "1st",
   "2nd",
@@ -166,6 +186,7 @@ function makeCourseTitle(
 
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
+  migrateV7();
   migrateUnicodeCleanup();
   migrateV1();
 
@@ -383,6 +404,7 @@ export function seedIfNeeded(): void {
       latitude: 12.9716,
       longitude: 77.5946,
       locationAddress: "Bangalore, Karnataka",
+      incentiveCalculated: false,
     },
     {
       id: 2,
@@ -406,6 +428,7 @@ export function seedIfNeeded(): void {
       latitude: 12.9352,
       longitude: 77.6244,
       locationAddress: "Koramangala, Bangalore",
+      incentiveCalculated: false,
     },
     {
       id: 3,
@@ -429,6 +452,7 @@ export function seedIfNeeded(): void {
       latitude: 13.0068,
       longitude: 77.5864,
       locationAddress: "Hebbal, Bangalore",
+      incentiveCalculated: false,
     },
   ];
 
@@ -530,6 +554,15 @@ export function seedIfNeeded(): void {
   setItem(KEYS.NOTIFICATIONS, notifications);
   setItem(KEYS.TIME_LOGS, timeLogs);
   setItem(KEYS.ACTIVITY_LOGS, [] as ActivityLog[]);
+
+  // Seed AdminConfig defaults
+  const defaultAdminConfig: AdminConfig = {
+    feIncentiveRate: 10,
+    tlCommissionRate: 5,
+    lastUpdated: new Date().toISOString(),
+  };
+  localStorage.setItem(KEYS.ADMIN_CONFIG, JSON.stringify(defaultAdminConfig));
+
   localStorage.setItem(KEYS.SEEDED, "true");
   // Mark V5 and V6 as done since we seeded with correct values
   localStorage.setItem(KEYS.SEEDED_V5, "true");
@@ -724,6 +757,23 @@ export const db = {
 
   nextId: (items: { id: number }[]): number =>
     items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1,
+
+  // ---- AdminConfig ----
+  getAdminConfig: (): AdminConfig => {
+    try {
+      const raw = localStorage.getItem(KEYS.ADMIN_CONFIG);
+      if (raw) return JSON.parse(raw) as AdminConfig;
+    } catch {
+      /* ignore */
+    }
+    return {
+      feIncentiveRate: 10,
+      tlCommissionRate: 5,
+      lastUpdated: new Date().toISOString(),
+    };
+  },
+  saveAdminConfig: (config: AdminConfig) =>
+    localStorage.setItem(KEYS.ADMIN_CONFIG, JSON.stringify(config)),
 };
 
 // ---- FE ASSIGNMENT HELPERS ----
@@ -764,6 +814,68 @@ export function updateFELastLogin(feId: string): void {
   setItem(KEYS.FES, updated);
 }
 
+// ---- TL CREATION HELPERS ----
+
+/** Generate next TL ID in TL001, TL002... format */
+function generateTLID(existingTLs: TeamLeader[]): string {
+  const nums = existingTLs
+    .map((tl) => Number.parseInt(tl.id.replace(/^TL0*/, ""), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  return `TL${String(next).padStart(3, "0")}`;
+}
+
+/** Generate a referral code like TL2026ABCD */
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) {
+    suffix += chars[Math.floor(Math.random() * chars.length)];
+  }
+  const year = new Date().getFullYear();
+  return `TL${year}${suffix}`;
+}
+
+/** Create a new Team Leader with auto-generated ID and referral code.
+ *  Returns null if phone is already taken. */
+export function createTeamLeader(input: {
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  commissionRate: number;
+  monthlyTarget: number;
+  joiningDate: string;
+  status: "active" | "inactive";
+}): TeamLeader | null {
+  const existing = getItem<TeamLeader>(KEYS.TLS);
+  // Phone uniqueness check
+  if (existing.some((tl) => tl.phone === input.phone.trim())) return null;
+
+  const newId = generateTLID(existing);
+  const newTL: TeamLeader = {
+    id: newId,
+    tlID: newId,
+    name: input.name.trim(),
+    phone: input.phone.trim(),
+    email: input.email?.trim() || "",
+    address: input.address?.trim() || "",
+    referralCode: generateReferralCode(),
+    assignedFEIds: [],
+    monthlyTarget: input.monthlyTarget,
+    commissionRate: input.commissionRate,
+    totalCommission: 0,
+    walletBalance: 0,
+    joiningDate: input.joiningDate,
+    status: input.status,
+    createdBy: "admin",
+    createdAt: new Date().toISOString(),
+  };
+
+  setItem(KEYS.TLS, [...existing, newTL]);
+  return newTL;
+}
+
 // ---- TL SEED DATA ----
 export function seedTLData(): void {
   if (localStorage.getItem(KEYS.TL_SEEDED)) return;
@@ -778,24 +890,38 @@ export function seedTLData(): void {
   const tls: TeamLeader[] = [
     {
       id: "TL001",
+      tlID: "TL001",
       name: "Amit Kumar",
       phone: "9900112233",
-      referralCode: "TL001",
+      email: "amit.kumar@openframe.edu",
+      address: "Bangalore, Karnataka",
+      referralCode: "TL2026AMTK",
       assignedFEIds: [1, 2],
       monthlyTarget: 500,
+      commissionRate: 10,
       totalCommission: 240,
       walletBalance: 180,
+      joiningDate: daysAgo(90).split("T")[0],
+      status: "active",
+      createdBy: "admin",
       createdAt: daysAgo(90),
     },
     {
       id: "TL002",
+      tlID: "TL002",
       name: "Priya Singh",
       phone: "9900223344",
-      referralCode: "TL002",
+      email: "priya.singh@openframe.edu",
+      address: "Mysore, Karnataka",
+      referralCode: "TL2026PRSG",
       assignedFEIds: [1],
       monthlyTarget: 500,
+      commissionRate: 10,
       totalCommission: 120,
       walletBalance: 80,
+      joiningDate: daysAgo(60).split("T")[0],
+      status: "active",
+      createdBy: "admin",
       createdAt: daysAgo(60),
     },
   ];
@@ -808,7 +934,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 1,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(30),
     },
@@ -818,7 +944,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 3,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(28),
     },
@@ -828,7 +954,7 @@ export function seedTLData(): void {
       feId: 2,
       feName: "Priya Singh",
       registrationId: 2,
-      amount: 10,
+      amount: 5,
       status: "approved",
       createdAt: daysAgo(20),
     },
@@ -838,7 +964,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 1,
-      amount: 10,
+      amount: 5,
       status: "approved",
       createdAt: daysAgo(15),
     },
@@ -848,7 +974,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 3,
-      amount: 10,
+      amount: 5,
       status: "pending",
       createdAt: daysAgo(7),
     },
@@ -858,7 +984,7 @@ export function seedTLData(): void {
       feId: 2,
       feName: "Priya Singh",
       registrationId: 2,
-      amount: 10,
+      amount: 5,
       status: "pending",
       createdAt: daysAgo(5),
     },
@@ -868,7 +994,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 1,
-      amount: 10,
+      amount: 5,
       status: "pending",
       createdAt: daysAgo(3),
     },
@@ -878,7 +1004,7 @@ export function seedTLData(): void {
       feId: 2,
       feName: "Priya Singh",
       registrationId: 3,
-      amount: 10,
+      amount: 5,
       status: "pending",
       createdAt: daysAgo(2),
     },
@@ -888,7 +1014,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 1,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(25),
     },
@@ -898,7 +1024,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 3,
-      amount: 10,
+      amount: 5,
       status: "approved",
       createdAt: daysAgo(10),
     },
@@ -908,7 +1034,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 2,
-      amount: 10,
+      amount: 5,
       status: "pending",
       createdAt: daysAgo(4),
     },
@@ -918,7 +1044,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 2,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(45),
     },
@@ -928,7 +1054,7 @@ export function seedTLData(): void {
       feId: 2,
       feName: "Priya Singh",
       registrationId: 1,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(40),
     },
@@ -938,7 +1064,7 @@ export function seedTLData(): void {
       feId: 1,
       feName: "Rahul Sharma",
       registrationId: 3,
-      amount: 10,
+      amount: 5,
       status: "approved",
       createdAt: daysAgo(12),
     },
@@ -948,7 +1074,7 @@ export function seedTLData(): void {
       feId: 2,
       feName: "Priya Singh",
       registrationId: 2,
-      amount: 10,
+      amount: 5,
       status: "paid",
       createdAt: daysAgo(35),
     },

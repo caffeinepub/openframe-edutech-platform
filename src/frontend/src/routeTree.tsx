@@ -14,6 +14,7 @@ import CertificatesPage from "./pages/admin/CertificatesPage";
 import CoursesPage from "./pages/admin/CoursesPage";
 import FEPerformancePage from "./pages/admin/FEPerformancePage";
 import FieldExecutivesPage from "./pages/admin/FieldExecutivesPage";
+import IncentiveSettingsPage from "./pages/admin/IncentiveSettingsPage";
 import LeaderboardPage from "./pages/admin/LeaderboardPage";
 import MapPage from "./pages/admin/MapPage";
 import PayrollPage from "./pages/admin/PayrollPage";
@@ -143,6 +144,12 @@ const adminTeamLeadersRoute = createRoute({
   component: TeamLeadersPage,
 });
 
+const adminIncentiveSettingsRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/incentive-settings",
+  component: IncentiveSettingsPage,
+});
+
 const feLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "fe-layout",
@@ -263,6 +270,7 @@ export const routeTree = rootRoute.addChildren([
     adminMapRoute,
     adminPayrollRoute,
     adminFEPerformanceRoute,
+    adminIncentiveSettingsRoute,
   ]),
   feLayoutRoute.addChildren([
     feDashboardRoute,
