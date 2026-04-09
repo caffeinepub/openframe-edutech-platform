@@ -38,6 +38,7 @@ const KEYS = {
   SEEDED_V4: "openframe_seeded_v4",
   SEEDED_V5: "openframe_seeded_v5",
   UNICODE_CLEANED: "openframe_unicode_cleaned_v4",
+  SEEDED_V6: "openframe_seeded_v6",
   TLS: "openframe_tls",
   COMMISSIONS: "openframe_commissions",
   TL_SESSION: "openframe_tl_session",
@@ -111,6 +112,36 @@ function migrateV5(): void {
   localStorage.setItem(KEYS.SEEDED_V5, "true");
 }
 
+// ---- MIGRATION V6: assignedTL_ID, status, lastLoginDate ----
+function migrateV6(): void {
+  if (localStorage.getItem(KEYS.SEEDED_V6)) return;
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  if (fes.length === 0) return; // not seeded yet, skip
+  const updated = fes.map((fe) => {
+    const raw = fe as unknown as Record<string, unknown>;
+    const existingTL =
+      raw.assignedTL_ID !== undefined
+        ? (raw.assignedTL_ID as string | null)
+        : null;
+    const existingStatus =
+      raw.status !== undefined
+        ? (raw.status as FieldExecutive["status"])
+        : existingTL
+          ? "active"
+          : "unassigned";
+    const existingLogin =
+      typeof raw.lastLoginDate === "number" ? raw.lastLoginDate : Date.now();
+    return {
+      ...fe,
+      assignedTL_ID: existingTL,
+      status: existingStatus,
+      lastLoginDate: existingLogin,
+    };
+  });
+  setItem(KEYS.FES, updated);
+  localStorage.setItem(KEYS.SEEDED_V6, "true");
+}
+
 const ORDINALS = [
   "1st",
   "2nd",
@@ -139,8 +170,9 @@ export function seedIfNeeded(): void {
   migrateV1();
 
   if (localStorage.getItem(KEYS.SEEDED)) {
-    // Still run V5 migration even if already seeded
+    // Still run V5 and V6 migrations even if already seeded
     migrateV5();
+    migrateV6();
     return;
   }
 
@@ -270,6 +302,9 @@ export function seedIfNeeded(): void {
       bonusEarned: 0,
       totalEarnings: 0,
       minActiveStudents: 20,
+      assignedTL_ID: "TL001",
+      status: "active" as const,
+      lastLoginDate: Date.now(),
     },
     {
       id: 2,
@@ -292,6 +327,9 @@ export function seedIfNeeded(): void {
       bonusEarned: 0,
       totalEarnings: 0,
       minActiveStudents: 20,
+      assignedTL_ID: null,
+      status: "unassigned" as const,
+      lastLoginDate: Date.now(),
     },
   ];
 
@@ -493,8 +531,9 @@ export function seedIfNeeded(): void {
   setItem(KEYS.TIME_LOGS, timeLogs);
   setItem(KEYS.ACTIVITY_LOGS, [] as ActivityLog[]);
   localStorage.setItem(KEYS.SEEDED, "true");
-  // Mark V5 as done since we seeded with correct values
+  // Mark V5 and V6 as done since we seeded with correct values
   localStorage.setItem(KEYS.SEEDED_V5, "true");
+  localStorage.setItem(KEYS.SEEDED_V6, "true");
 }
 
 // ---- SALARY SEED ----
@@ -686,6 +725,44 @@ export const db = {
   nextId: (items: { id: number }[]): number =>
     items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1,
 };
+
+// ---- FE ASSIGNMENT HELPERS ----
+
+/** Returns all FEs that have no assigned TL (status === 'unassigned' or assignedTL_ID is null). */
+export function getUnassignedFEs(): FieldExecutive[] {
+  return getItem<FieldExecutive>(KEYS.FES).filter(
+    (fe) => fe.status === "unassigned" || fe.assignedTL_ID === null,
+  );
+}
+
+/** Assigns an FE to a TL: sets assignedTL_ID, status='active', and adds feId to TL's assignedFEIds. */
+export function assignFEToTL(feId: string, tlId: string): void {
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  const updatedFEs = fes.map((fe) =>
+    String(fe.id) === feId
+      ? { ...fe, assignedTL_ID: tlId, status: "active" as const }
+      : fe,
+  );
+  setItem(KEYS.FES, updatedFEs);
+
+  const tls = getItem<TeamLeader>(KEYS.TLS);
+  const updatedTLs = tls.map((tl) => {
+    if (tl.id !== tlId) return tl;
+    const feIdNum = Number(feId);
+    if (tl.assignedFEIds.includes(feIdNum)) return tl;
+    return { ...tl, assignedFEIds: [...tl.assignedFEIds, feIdNum] };
+  });
+  setItem(KEYS.TLS, updatedTLs);
+}
+
+/** Updates the lastLoginDate for a given FE to now. */
+export function updateFELastLogin(feId: string): void {
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  const updated = fes.map((fe) =>
+    String(fe.id) === feId ? { ...fe, lastLoginDate: Date.now() } : fe,
+  );
+  setItem(KEYS.FES, updated);
+}
 
 // ---- TL SEED DATA ----
 export function seedTLData(): void {

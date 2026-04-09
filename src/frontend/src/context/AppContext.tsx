@@ -6,7 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { db } from "../lib/storage";
+import { db, updateFELastLogin } from "../lib/storage";
 import type { AuthSession } from "../types/models";
 
 interface AppContextType {
@@ -33,6 +33,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback((s: AuthSession) => {
     db.saveSession(s);
     setSession(s);
+    // Record last login timestamp for FEs
+    if (s.role === "fe" && s.id !== undefined) {
+      updateFELastLogin(String(s.id));
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -58,3 +62,10 @@ export function useApp() {
   if (!ctx) throw new Error("useApp must be used inside AppProvider");
   return ctx;
 }
+
+// Re-export helpers so pages can import from a single context file
+export {
+  getUnassignedFEs,
+  assignFEToTL,
+  updateFELastLogin,
+} from "../lib/storage";

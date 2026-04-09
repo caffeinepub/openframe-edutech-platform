@@ -19,6 +19,7 @@ import MapPage from "./pages/admin/MapPage";
 import PayrollPage from "./pages/admin/PayrollPage";
 import RegistrationsPage from "./pages/admin/RegistrationsPage";
 import TargetsPage from "./pages/admin/TargetsPage";
+import FEBlockingScreen from "./pages/fe/FEBlockingScreen";
 import FEDashboard from "./pages/fe/FEDashboard";
 import FENotificationsPage from "./pages/fe/FENotificationsPage";
 import MySalaryPage from "./pages/fe/MySalaryPage";
@@ -151,6 +152,12 @@ const feDashboardRoute = createRoute({
   component: FEDashboard,
 });
 
+const feBlockedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/fe/blocked",
+  component: FEBlockingScreen,
+});
+
 const feRegisterRoute = createRoute({
   getParentRoute: () => feLayoutRoute,
   path: "/fe/register-student",
@@ -233,6 +240,7 @@ export const routeTree = rootRoute.addChildren([
   loginRoute,
   tlLoginRoute,
   tlDashboardRoute,
+  feBlockedRoute,
   adminLayoutRoute.addChildren([
     adminDashboardRoute,
     adminFERoute,

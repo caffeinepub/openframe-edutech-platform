@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Loader2,
   Shield,
+  Star,
   User,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -20,7 +21,7 @@ import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { db } from "../lib/storage";
 import type { FieldExecutive, Student } from "../types/models";
 
-type RoleView = "select" | "admin" | "fe" | "student";
+type RoleView = "select" | "admin" | "fe" | "student" | "tl";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -55,6 +56,13 @@ export default function LoginPage() {
     }
   }, [view, ii.clear]);
 
+  // Navigate to TL login when TL role is selected
+  useEffect(() => {
+    if (view === "tl") {
+      navigate({ to: "/tl/login" });
+    }
+  }, [view, navigate]);
+
   // When II identity is set and we're in FE view, try to auto-match principal
   useEffect(() => {
     if (view !== "fe") return;
@@ -76,7 +84,11 @@ export default function LoginPage() {
         feCode: matched.feCode,
       });
       toast.success(`Welcome back, ${matched.name}!`);
-      navigate({ to: "/fe/dashboard" });
+      if (matched.assignedTL_ID === null || matched.status === "unassigned") {
+        navigate({ to: "/fe/blocked" });
+      } else {
+        navigate({ to: "/fe/dashboard" });
+      }
     } else {
       // No principal match — show self-registration form
       setFeStep("linking");
@@ -132,7 +144,14 @@ export default function LoginPage() {
           feCode: existingByPhone.feCode,
         });
         toast.success(`Welcome back, ${existingByPhone.name}!`);
-        navigate({ to: "/fe/dashboard" });
+        if (
+          existingByPhone.assignedTL_ID === null ||
+          existingByPhone.status === "unassigned"
+        ) {
+          navigate({ to: "/fe/blocked" });
+        } else {
+          navigate({ to: "/fe/dashboard" });
+        }
         setLinkLoading(false);
         return;
       }
@@ -166,6 +185,9 @@ export default function LoginPage() {
       incentivePerRegistration: 0,
       bonusEarned: 0,
       totalEarnings: 0,
+      assignedTL_ID: null,
+      status: "unassigned",
+      lastLoginDate: Date.now(),
     };
     db.saveFEs([...allFEs, newFE]);
 
@@ -179,7 +201,8 @@ export default function LoginPage() {
     toast.success(
       `Welcome, ${newFE.name}! Your FE account (${feCode}) has been created.`,
     );
-    navigate({ to: "/fe/dashboard" });
+    // New FEs start unassigned — send to blocked screen
+    navigate({ to: "/fe/blocked" });
     setLinkLoading(false);
   };
 
@@ -280,14 +303,18 @@ export default function LoginPage() {
                     ? "Admin Login"
                     : view === "fe"
                       ? "Field Executive Login"
-                      : "Student Login"}
+                      : view === "tl"
+                        ? "Team Leader Login"
+                        : "Student Login"}
                 </h1>
                 <p className="text-muted-foreground mt-1">
                   {view === "admin"
                     ? "Enter your admin credentials"
                     : view === "fe"
                       ? "Sign in securely with Internet Identity"
-                      : "Enter your registered name and phone number"}
+                      : view === "tl"
+                        ? "Redirecting to Team Leader portal..."
+                        : "Enter your registered name and phone number"}
                 </p>
               </>
             )}
@@ -297,7 +324,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
             >
               {[
                 {
@@ -308,6 +335,15 @@ export default function LoginPage() {
                   color: "text-purple-700",
                   bg: "bg-purple-50",
                   ocid: "login.admin.card",
+                },
+                {
+                  role: "tl" as RoleView,
+                  icon: Star,
+                  title: "Team Leader",
+                  desc: "Manage your field executive team, track performance and commission.",
+                  color: "text-amber-700",
+                  bg: "bg-amber-50",
+                  ocid: "login.tl.card",
                 },
                 {
                   role: "fe" as RoleView,

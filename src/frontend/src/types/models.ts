@@ -24,6 +24,10 @@ export interface FieldExecutive {
   totalEarnings: number;
   // v5 commission/team fields
   minActiveStudents?: number;
+  // v6 assignment fields
+  assignedTL_ID: string | null;
+  status: "unassigned" | "active";
+  lastLoginDate: number;
 }
 
 export interface Course {

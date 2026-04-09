@@ -100,6 +100,15 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => navigate({ to: "/tl/login" })}
+                className="text-amber-700 border-amber-200 hover:bg-amber-50"
+                data-ocid="nav.tl_login.button"
+              >
+                Team Leader
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => navigate({ to: "/login" })}
                 data-ocid="nav.login.button"
               >
@@ -145,6 +154,18 @@ export default function LandingPage() {
                   </a>
                 ))}
                 <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-amber-700 border-amber-200 hover:bg-amber-50"
+                    onClick={() => {
+                      navigate({ to: "/tl/login" });
+                      setMobileOpen(false);
+                    }}
+                    data-ocid="nav.mobile_tl_login.button"
+                  >
+                    Team Leader
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

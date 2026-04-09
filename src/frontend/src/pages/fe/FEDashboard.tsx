@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -26,13 +27,42 @@ import { useApp } from "../../context/AppContext";
 import { computeTodayEarnings } from "../../lib/salaryCalc";
 import { db, migrateUnicodeCleanup } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
+import FEBlockingScreen from "./FEBlockingScreen";
 
 // Commission rules constants
 const COMMISSION_RATE = 10; // ₹10 per paid registration
 const MIN_ACTIVE_STUDENTS = 20;
 const DEFAULT_DAILY_TARGET = 5;
 
-export default function FEDashboard() {
+// Assignment guard wrapper — checks before mounting dashboard hooks
+function FEDashboardGuard() {
+  const { session } = useApp();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!session) {
+      navigate({ to: "/login" });
+    }
+  }, [session, navigate]);
+
+  if (!session) return null;
+
+  const feRecord = db.getFEs().find((f) => f.id === Number(session.id)) ?? null;
+  const isUnassigned =
+    !feRecord ||
+    feRecord.assignedTL_ID === null ||
+    feRecord.status === "unassigned";
+
+  if (isUnassigned) {
+    return <FEBlockingScreen />;
+  }
+
+  return <FEDashboardContent />;
+}
+
+export default FEDashboardGuard;
+
+function FEDashboardContent() {
   const { session } = useApp();
   const [regs, setRegs] = useState<Registration[]>([]);
   const [feData, setFeData] = useState<FieldExecutive | null>(null);

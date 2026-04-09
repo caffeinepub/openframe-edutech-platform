@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Award,
   BarChart2,
@@ -23,9 +23,10 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { db } from "../lib/storage";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -218,9 +219,20 @@ const feNavItems = [
 export function FELayout({ children }: { children: React.ReactNode }) {
   const { session, logout } = useApp();
   const { clear: clearII } = useInternetIdentity();
+  const navigate = useNavigate();
   const router = useRouterState();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const currentPath = router.location.pathname;
+
+  // Assignment guard — redirect unassigned FEs to blocked screen
+  useEffect(() => {
+    if (!session?.id) return;
+    const fes = db.getFEs();
+    const fe = fes.find((f) => f.id === session.id);
+    if (fe && (fe.assignedTL_ID === null || fe.status === "unassigned")) {
+      navigate({ to: "/fe/blocked" });
+    }
+  }, [session?.id, navigate]);
 
   const handleLogout = () => {
     clearII();
