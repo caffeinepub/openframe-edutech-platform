@@ -19,6 +19,7 @@ import {
   Target,
   TrendingUp,
   Trophy,
+  UserCheck2,
   Users,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import { db } from "../lib/storage";
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/field-executives", label: "Field Executives", icon: Users },
+  { href: "/admin/team-leaders", label: "Team Leaders", icon: UserCheck2 },
   { href: "/admin/registrations", label: "Registrations", icon: ClipboardList },
   { href: "/admin/courses", label: "Courses", icon: BookOpen },
   { href: "/admin/certificates", label: "Certificates", icon: Award },

@@ -19,6 +19,7 @@ import MapPage from "./pages/admin/MapPage";
 import PayrollPage from "./pages/admin/PayrollPage";
 import RegistrationsPage from "./pages/admin/RegistrationsPage";
 import TargetsPage from "./pages/admin/TargetsPage";
+import TeamLeadersPage from "./pages/admin/TeamLeadersPage";
 import FEBlockingScreen from "./pages/fe/FEBlockingScreen";
 import FEDashboard from "./pages/fe/FEDashboard";
 import FENotificationsPage from "./pages/fe/FENotificationsPage";
@@ -136,6 +137,12 @@ const adminFEPerformanceRoute = createRoute({
   component: FEPerformancePage,
 });
 
+const adminTeamLeadersRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: "/admin/team-leaders",
+  component: TeamLeadersPage,
+});
+
 const feLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "fe-layout",
@@ -244,6 +251,7 @@ export const routeTree = rootRoute.addChildren([
   adminLayoutRoute.addChildren([
     adminDashboardRoute,
     adminFERoute,
+    adminTeamLeadersRoute,
     adminRegistrationsRoute,
     adminCoursesRoute,
     adminCertificatesRoute,
