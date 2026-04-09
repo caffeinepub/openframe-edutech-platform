@@ -10,7 +10,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -28,6 +28,10 @@ import {
 } from "recharts";
 import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
+import {
+  fetchAllRegistrationsFromBackend,
+  mergeRegistrations,
+} from "../../lib/backendService";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
@@ -50,9 +54,9 @@ export default function AdminDashboard() {
   const [last7DaysData, setLast7DaysData] = useState<
     { day: string; registrations: number }[]
   >([]);
+  const backendFetchRef = useRef(false);
 
-  useEffect(() => {
-    const registrations = db.getRegistrations();
+  const computeStats = useCallback((registrations: Registration[]) => {
     const fes = db.getFEs();
     const students = db.getStudents();
 
@@ -104,6 +108,87 @@ export default function AdminDashboard() {
     setCourseDistribution(dist);
     setLast7DaysData(days7);
   }, []);
+
+  const load = useCallback(async () => {
+    const localRegs = db.getRegistrations();
+
+    if (!backendFetchRef.current) {
+      backendFetchRef.current = true;
+      try {
+        const backendRegs = await fetchAllRegistrationsFromBackend();
+        if (backendRegs.length > 0) {
+          const merged = mergeRegistrations(backendRegs, localRegs);
+          db.saveRegistrations(merged);
+          computeStats(merged);
+          return;
+        }
+      } catch {
+        // fall through to local
+      }
+    }
+
+    computeStats(localRegs);
+  }, [computeStats]);
+
+  useEffect(() => {
+    load();
+    // Poll every 3 seconds (localStorage) for same-device registrations
+    const interval = setInterval(() => {
+      computeStats(db.getRegistrations());
+    }, 3000);
+
+    // Re-fetch from backend every 15 seconds for cross-device registrations
+    const backendInterval = setInterval(() => {
+      backendFetchRef.current = false;
+      load();
+    }, 15000);
+
+    // Cross-tab sync: reload immediately when another tab writes to localStorage
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === null ||
+        e.key === "openframe_registrations" ||
+        e.key === "openframe_last_registration"
+      ) {
+        computeStats(db.getRegistrations());
+      }
+    };
+
+    // Same-tab sync: fired by RegisterStudentPage immediately after saving
+    const handleRegistrationUpdate = () => computeStats(db.getRegistrations());
+
+    // Also reload when the tab regains focus — triggers backend re-fetch
+    const handleFocus = () => {
+      backendFetchRef.current = false;
+      load();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        backendFetchRef.current = false;
+        load();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(
+      "openframe_registration_update",
+      handleRegistrationUpdate,
+    );
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(backendInterval);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(
+        "openframe_registration_update",
+        handleRegistrationUpdate,
+      );
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [load, computeStats]);
 
   return (
     <div className="p-6 space-y-6">

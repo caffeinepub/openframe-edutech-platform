@@ -25,6 +25,11 @@ import { toast } from "sonner";
 import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useApp } from "../../context/AppContext";
+import {
+  drainSyncQueue,
+  fetchFERegistrationsFromBackend,
+  mergeRegistrations,
+} from "../../lib/backendService";
 import { computeTodayEarnings } from "../../lib/salaryCalc";
 import { db, migrateUnicodeCleanup } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
@@ -59,6 +64,7 @@ function FEDashboardContent() {
   const [dismissedTargetAlert, setDismissedTargetAlert] = useState(false);
   const [dismissedStudentsAlert, setDismissedStudentsAlert] = useState(false);
   const alertShownRef = useRef(false);
+  const backendFetchRef = useRef(false);
   const [stats, setStats] = useState({
     total: 0,
     today: 0,
@@ -84,129 +90,178 @@ function FEDashboardContent() {
     premiumTotal: 0,
   });
 
-  const loadData = useCallback(() => {
+  const computeStats = useCallback(
+    (allRegs: Registration[]) => {
+      if (!session?.id) return;
+      const fe = db.getFEs().find((f) => f.id === session.id) ?? null;
+      const adminConfig = db.getAdminConfig();
+      const feIncentiveRate = adminConfig.feIncentiveRate;
+      const today = new Date().toDateString();
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const monthAgo = new Date();
+      monthAgo.setDate(monthAgo.getDate() - 30);
+
+      const todayRegs = allRegs.filter(
+        (r) => new Date(r.createdAt).toDateString() === today,
+      );
+      const todayCount = todayRegs.length;
+      const todayPaidRegsArr = todayRegs.filter(
+        (r) => r.paymentStatus === "Paid",
+      );
+      const todayPaidCount = todayPaidRegsArr.length;
+      const todayEarnings = todayPaidCount * feIncentiveRate;
+
+      const paid = allRegs.filter((r) => r.paymentStatus === "Paid").length;
+      const pending = allRegs.filter((r) => r.status === "Pending").length;
+
+      const paidRegs = allRegs.filter((r) => r.paymentStatus === "Paid");
+      const totalEarned = paidRegs.length * feIncentiveRate;
+
+      const weekCount = allRegs.filter(
+        (r) => new Date(r.createdAt) >= weekAgo,
+      ).length;
+      const monthCount = allRegs.filter(
+        (r) => new Date(r.createdAt) >= monthAgo,
+      ).length;
+
+      const basicPaid = paidRegs.filter((r) => r.feePlan === "Basic").length;
+      const standardPaid = paidRegs.filter(
+        (r) => r.feePlan === "Standard",
+      ).length;
+      const premiumPaid = paidRegs.filter(
+        (r) => r.feePlan === "Premium",
+      ).length;
+      const basicEarned = basicPaid * 50;
+      const standardEarned = standardPaid * 100;
+      const premiumEarned = premiumPaid * 150;
+      const totalSales = basicEarned + standardEarned + premiumEarned;
+
+      const basicTotal = allRegs.filter((r) => r.feePlan === "Basic").length;
+      const standardTotal = allRegs.filter(
+        (r) => r.feePlan === "Standard",
+      ).length;
+      const premiumTotal = allRegs.filter(
+        (r) => r.feePlan === "Premium",
+      ).length;
+
+      const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
+        session.id,
+      );
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const logs = db.getTimeLogs();
+      const tLog =
+        logs.find((l) => l.feId === session.id && l.date === todayStr) ?? null;
+      setTodayLog(tLog);
+
+      setRegs(allRegs.slice(0, 5));
+      setFeData(fe);
+      setStats({
+        total: allRegs.length,
+        today: todayCount,
+        todayPaidCount,
+        todayEarnings,
+        feIncentiveRate,
+        paid,
+        pending,
+        totalEarned,
+        totalSales,
+        weekCount,
+        monthCount,
+        todayIncentive,
+        todayPaidRegs: todayPaidRegistrations,
+        basicPaid,
+        standardPaid,
+        premiumPaid,
+        basicEarned,
+        standardEarned,
+        premiumEarned,
+        basicTotal,
+        standardTotal,
+        premiumTotal,
+      });
+
+      if (!alertShownRef.current && fe) {
+        const currentHour = new Date().getHours();
+        if (todayCount >= (fe.dailyTarget ?? DEFAULT_DAILY_TARGET)) {
+          toast.success("🎉 Daily target achieved! Great work!");
+          alertShownRef.current = true;
+        } else if (
+          currentHour >= 14 &&
+          todayCount < (fe.dailyTarget ?? DEFAULT_DAILY_TARGET) * 0.5
+        ) {
+          toast.warning("⚠️ You've reached less than 50% of your daily target");
+          alertShownRef.current = true;
+        }
+      }
+    },
+    [session],
+  );
+
+  const loadData = useCallback(async () => {
     if (!session?.id) return;
-    const allRegs = db.getRegistrations().filter((r) => r.feId === session.id);
-    const fe = db.getFEs().find((f) => f.id === session.id) ?? null;
-    const adminConfig = db.getAdminConfig();
-    const feIncentiveRate = adminConfig.feIncentiveRate;
-    const today = new Date().toDateString();
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthAgo = new Date();
-    monthAgo.setDate(monthAgo.getDate() - 30);
 
-    const todayRegs = allRegs.filter(
-      (r) => new Date(r.createdAt).toDateString() === today,
-    );
-    const todayCount = todayRegs.length;
-    const todayPaidRegsArr = todayRegs.filter(
-      (r) => r.paymentStatus === "Paid",
-    );
-    const todayPaidCount = todayPaidRegsArr.length;
-    const todayEarnings = todayPaidCount * feIncentiveRate;
+    const localRegs = db
+      .getRegistrations()
+      .filter((r) => r.feId === session.id);
 
-    const paid = allRegs.filter((r) => r.paymentStatus === "Paid").length;
-    const pending = allRegs.filter((r) => r.status === "Pending").length;
-
-    const paidRegs = allRegs.filter((r) => r.paymentStatus === "Paid");
-    const totalEarned = paidRegs.length * feIncentiveRate;
-
-    const weekCount = allRegs.filter(
-      (r) => new Date(r.createdAt) >= weekAgo,
-    ).length;
-    const monthCount = allRegs.filter(
-      (r) => new Date(r.createdAt) >= monthAgo,
-    ).length;
-
-    // Per-plan paid earnings
-    const basicPaid = paidRegs.filter((r) => r.feePlan === "Basic").length;
-    const standardPaid = paidRegs.filter(
-      (r) => r.feePlan === "Standard",
-    ).length;
-    const premiumPaid = paidRegs.filter((r) => r.feePlan === "Premium").length;
-    const basicEarned = basicPaid * 50;
-    const standardEarned = standardPaid * 100;
-    const premiumEarned = premiumPaid * 150;
-
-    // Total Sales = sum of fee amounts for paid registrations
-    const totalSales = basicEarned + standardEarned + premiumEarned;
-
-    // Per-plan total registrations (all, not just paid)
-    const basicTotal = allRegs.filter((r) => r.feePlan === "Basic").length;
-    const standardTotal = allRegs.filter(
-      (r) => r.feePlan === "Standard",
-    ).length;
-    const premiumTotal = allRegs.filter((r) => r.feePlan === "Premium").length;
-
-    // Today's salary incentive (uses computeTodayEarnings which respects AdminConfig)
-    const { todayIncentive, todayPaidRegistrations } = computeTodayEarnings(
-      session.id,
-    );
-
-    // Today's time log
-    const todayStr = new Date().toISOString().split("T")[0];
-    const logs = db.getTimeLogs();
-    const tLog =
-      logs.find((l) => l.feId === session.id && l.date === todayStr) ?? null;
-    setTodayLog(tLog);
-
-    setRegs(allRegs.slice(0, 5));
-    setFeData(fe);
-    setStats({
-      total: allRegs.length,
-      today: todayCount,
-      todayPaidCount,
-      todayEarnings,
-      feIncentiveRate,
-      paid,
-      pending,
-      totalEarned,
-      totalSales,
-      weekCount,
-      monthCount,
-      todayIncentive,
-      todayPaidRegs: todayPaidRegistrations,
-      basicPaid,
-      standardPaid,
-      premiumPaid,
-      basicEarned,
-      standardEarned,
-      premiumEarned,
-      basicTotal,
-      standardTotal,
-      premiumTotal,
-    });
-
-    // Auto-alerts (toast)
-    if (!alertShownRef.current && fe) {
-      const currentHour = new Date().getHours();
-      if (todayCount >= (fe.dailyTarget ?? DEFAULT_DAILY_TARGET)) {
-        toast.success("🎉 Daily target achieved! Great work!");
-        alertShownRef.current = true;
-      } else if (
-        currentHour >= 14 &&
-        todayCount < (fe.dailyTarget ?? DEFAULT_DAILY_TARGET) * 0.5
-      ) {
-        toast.warning("⚠️ You've reached less than 50% of your daily target");
-        alertShownRef.current = true;
+    if (!backendFetchRef.current) {
+      backendFetchRef.current = true;
+      try {
+        const backendRegs = await fetchFERegistrationsFromBackend(session.id);
+        if (backendRegs.length > 0) {
+          // Merge: backend is authoritative for payment status updates from admin
+          const merged = mergeRegistrations(backendRegs, localRegs);
+          // Persist back to localStorage so other parts of the app see the update
+          const allRegs = db.getRegistrations();
+          const idsInMerged = new Set(merged.map((r) => r.id));
+          const otherFERegs = allRegs.filter(
+            (r) => r.feId !== session.id || !idsInMerged.has(r.id),
+          );
+          db.saveRegistrations([...otherFERegs, ...merged]);
+          computeStats(merged);
+          return;
+        }
+      } catch {
+        // fall through to local
       }
     }
-  }, [session]);
+
+    computeStats(localRegs);
+  }, [session, computeStats]);
 
   useEffect(() => {
     migrateUnicodeCleanup();
+    // Drain any unsynced registrations from previous sessions
+    drainSyncQueue(db.getRegistrations);
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Real-time poll every 3 seconds for payment status updates
+  // Poll localStorage every 3 seconds for payment status updates from admin on same device
   useEffect(() => {
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    const interval = setInterval(() => {
+      if (!session?.id) return;
+      const localRegs = db
+        .getRegistrations()
+        .filter((r) => r.feId === session.id);
+      computeStats(localRegs);
+    }, 3000);
+
+    // Re-fetch from backend every 15 seconds to get payment status updates from admin
+    const backendInterval = setInterval(() => {
+      backendFetchRef.current = false;
+      loadData();
+    }, 15000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(backendInterval);
+    };
+  }, [loadData, computeStats, session]);
 
   useEffect(() => {
     if (!todayLog?.loginTime || todayLog.logoutTime) return;

@@ -27,6 +27,30 @@ export interface DashboardStats {
   'totalRevenue' : bigint,
   'totalRegistrations' : bigint,
 }
+export interface RegistrationRecord {
+  'id' : bigint,
+  'status' : string,
+  'latitude' : [] | [number],
+  'paymentStatus' : string,
+  'feCode' : string,
+  'feName' : string,
+  'studentName' : string,
+  'feId' : bigint,
+  'createdAt' : string,
+  'feePlan' : string,
+  'studentPhone' : string,
+  'updatedAt' : string,
+  'longitude' : [] | [number],
+  'schedule' : string,
+  'price' : bigint,
+  'courseName' : string,
+  'courseType' : string,
+  'classLink' : string,
+  'courseId' : bigint,
+  'locationAddress' : [] | [string],
+  'incentiveCalculated' : boolean,
+  'medium' : string,
+}
 export interface Student {
   'id' : StudentId,
   'name' : string,
@@ -34,20 +58,42 @@ export interface Student {
 }
 export type StudentId = bigint;
 export interface _SERVICE {
+  /**
+   * / Add or update a full registration record (called by FE on any device)
+   */
+  'addRegistrationRecord' : ActorMethod<[RegistrationRecord], undefined>,
   'assignBatch' : ActorMethod<[StudentId, string], undefined>,
   'createCourse' : ActorMethod<
     [string, CourseType, bigint, Array<string>, bigint],
     undefined
   >,
   'getAllCourses' : ActorMethod<[], Array<Course>>,
+  /**
+   * / Get all registration records (called by admin to see all FE registrations)
+   */
+  'getAllRegistrationRecords' : ActorMethod<[], Array<RegistrationRecord>>,
   'getAllStudents' : ActorMethod<[], Array<Student>>,
   'getCourse' : ActorMethod<[CourseId], [] | [Course]>,
   'getDashboard' : ActorMethod<[], DashboardStats>,
+  /**
+   * / Get registration records for a specific FE (called by FE to see their own registrations)
+   */
+  'getRegistrationRecordsByFE' : ActorMethod<
+    [bigint],
+    Array<RegistrationRecord>
+  >,
   'getStudent' : ActorMethod<[StudentId], [] | [Student]>,
   'processPayment' : ActorMethod<[StudentId, bigint], undefined>,
   'registerStudent' : ActorMethod<[string, bigint], StudentId>,
   'registerStudentForCourse' : ActorMethod<[StudentId, CourseId], undefined>,
   'setAdmin' : ActorMethod<[], undefined>,
+  /**
+   * / Update payment status and approval details for a registration (called by admin)
+   */
+  'updateRegistrationRecord' : ActorMethod<
+    [bigint, string, string, string, string, string],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

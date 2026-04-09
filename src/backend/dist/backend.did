@@ -5,6 +5,31 @@ type Student =
    name: text;
    referredBy: nat;
  };
+type RegistrationRecord = 
+ record {
+   classLink: text;
+   courseId: nat;
+   courseName: text;
+   courseType: text;
+   createdAt: text;
+   feCode: text;
+   feId: nat;
+   feName: text;
+   feePlan: text;
+   id: nat;
+   incentiveCalculated: bool;
+   latitude: opt float64;
+   locationAddress: opt text;
+   longitude: opt float64;
+   medium: text;
+   paymentStatus: text;
+   price: nat;
+   schedule: text;
+   status: text;
+   studentName: text;
+   studentPhone: text;
+   updatedAt: text;
+ };
 type DashboardStats = 
  record {
    totalRegistrations: nat;
@@ -28,16 +53,25 @@ type Course =
    price: nat;
  };
 service : {
+  /// Add or update a full registration record (called by FE on any device)
+  addRegistrationRecord: (rec: RegistrationRecord) -> ();
   assignBatch: (studentId: StudentId, batch: text) -> ();
   createCourse: (name: text, courseType: CourseType, price: nat, lessons:
    vec text, passingScore: nat) -> ();
   getAllCourses: () -> (vec Course) query;
+  /// Get all registration records (called by admin to see all FE registrations)
+  getAllRegistrationRecords: () -> (vec RegistrationRecord) query;
   getAllStudents: () -> (vec Student) query;
   getCourse: (id: CourseId) -> (opt Course) query;
   getDashboard: () -> (DashboardStats) query;
+  /// Get registration records for a specific FE (called by FE to see their own registrations)
+  getRegistrationRecordsByFE: (feId: nat) -> (vec RegistrationRecord) query;
   getStudent: (id: StudentId) -> (opt Student) query;
   processPayment: (studentId: StudentId, amount: nat) -> ();
   registerStudent: (name: text, referredBy: nat) -> (StudentId);
   registerStudentForCourse: (studentId: StudentId, courseId: CourseId) -> ();
   setAdmin: () -> ();
+  /// Update payment status and approval details for a registration (called by admin)
+  updateRegistrationRecord: (id: nat, status: text, paymentStatus: text,
+   classLink: text, schedule: text, updatedAt: text) -> ();
 }

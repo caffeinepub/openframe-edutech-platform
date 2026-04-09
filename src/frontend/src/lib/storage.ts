@@ -227,6 +227,8 @@ export function seedIfNeeded(): void {
     // Still run V5 and V6 migrations even if already seeded
     migrateV5();
     migrateV6();
+    // Repair any orphaned registrations (safe no-op when nothing needs fixing)
+    repairOrphanedRegistrations();
     return;
   }
 
@@ -684,7 +686,42 @@ export function seedSalaryData(): void {
   localStorage.setItem(KEYS.SEEDED_V4, "true");
 }
 
-// ---- CRUD HELPERS ----
+// ---- ORPHANED REGISTRATION REPAIR ----
+/**
+ * repairOrphanedRegistrations — fixes any Registration with feId=null or feId=0
+ * by looking up an FE whose name matches the feName stored in the registration.
+ * This is safe to run on every app load (it only writes when it finds repairs to make).
+ */
+export function repairOrphanedRegistrations(): void {
+  const regs = getItem<Registration>(KEYS.REGISTRATIONS);
+  const fes = getItem<FieldExecutive>(KEYS.FES);
+  if (regs.length === 0 || fes.length === 0) return;
+
+  let repaired = false;
+  const updated = regs.map((r) => {
+    // Only repair entries with a missing/zero feId
+    const feIdNum = Number(r.feId);
+    if (feIdNum && feIdNum > 0) return r;
+
+    // Try to find an FE whose name matches feName
+    const matchByName = fes.find(
+      (fe) => fe.name.toLowerCase() === (r.feName ?? "").toLowerCase(),
+    );
+    if (matchByName) {
+      console.info(
+        `[repairOrphanedRegistrations] Repaired registration id=${r.id} — set feId to ${matchByName.id} (${matchByName.name})`,
+      );
+      repaired = true;
+      return { ...r, feId: matchByName.id, feCode: matchByName.feCode };
+    }
+    return r;
+  });
+
+  if (repaired) {
+    setItem(KEYS.REGISTRATIONS, updated);
+  }
+}
+
 export const db = {
   getFEs: (): FieldExecutive[] => getItem<FieldExecutive>(KEYS.FES),
   saveFEs: (fes: FieldExecutive[]) => setItem(KEYS.FES, fes),

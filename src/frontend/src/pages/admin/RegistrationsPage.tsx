@@ -26,10 +26,15 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
 import { CourseTypeBadge, StatusBadge } from "../../components/StatusBadge";
+import {
+  fetchAllRegistrationsFromBackend,
+  mergeRegistrations,
+  updateRegistrationOnBackend,
+} from "../../lib/backendService";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
@@ -68,16 +73,49 @@ export default function RegistrationsPage() {
   const [classLink, setClassLink] = useState("");
   const [schedule, setSchedule] = useState("");
   const [approveLoading, setApproveLoading] = useState(false);
+  const backendFetchRef = useRef(false);
 
-  // Load ALL registrations — no feId filtering on the admin side
-  const load = useCallback(() => {
-    setRegs(db.getRegistrations());
+  /**
+   * Load registrations: fetch from backend canister (global truth), merge with
+   * localStorage (catches any not-yet-synced local entries), then update state
+   * and persist the merged result locally for instant re-reads.
+   */
+  const load = useCallback(async () => {
+    const localRegs = db.getRegistrations();
+
+    // Only hit the backend on the first load or when explicitly triggered.
+    // Subsequent poll ticks just read localStorage so the interval stays cheap.
+    if (!backendFetchRef.current) {
+      backendFetchRef.current = true;
+      try {
+        const backendRegs = await fetchAllRegistrationsFromBackend();
+        if (backendRegs.length > 0) {
+          const merged = mergeRegistrations(backendRegs, localRegs);
+          // Persist merged result so localStorage is always up-to-date
+          db.saveRegistrations(merged);
+          setRegs(merged);
+          return;
+        }
+      } catch {
+        // fall through to localStorage
+      }
+    }
+
+    setRegs(localRegs);
   }, []);
 
   useEffect(() => {
     load();
-    // Poll every 1 second for new registrations from FE tabs
-    const interval = setInterval(load, 1000);
+    // Poll localStorage every 1 second for same-device FE registrations
+    const interval = setInterval(() => {
+      setRegs(db.getRegistrations());
+    }, 1000);
+
+    // Re-fetch from backend every 10 seconds for cross-device registrations
+    const backendInterval = setInterval(() => {
+      backendFetchRef.current = false; // reset to allow next backend fetch
+      load();
+    }, 10000);
 
     // Cross-tab sync: reload immediately when another tab writes to localStorage
     const handleStorage = (e: StorageEvent) => {
@@ -86,25 +124,41 @@ export default function RegistrationsPage() {
         e.key === "openframe_registrations" ||
         e.key === "openframe_last_registration"
       ) {
-        load();
+        setRegs(db.getRegistrations());
       }
     };
 
-    // Also reload immediately when the tab regains focus — catches cross-tab writes
+    // Same-tab sync: fired by RegisterStudentPage immediately after saving
+    const handleRegistrationUpdate = () => setRegs(db.getRegistrations());
+
+    // Also reload immediately when the tab regains focus — triggers backend re-fetch
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
+        backendFetchRef.current = false;
         load();
       }
     };
-    const handleFocus = () => load();
+    const handleFocus = () => {
+      backendFetchRef.current = false;
+      load();
+    };
 
     window.addEventListener("storage", handleStorage);
+    window.addEventListener(
+      "openframe_registration_update",
+      handleRegistrationUpdate,
+    );
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
     return () => {
       clearInterval(interval);
+      clearInterval(backendInterval);
       window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(
+        "openframe_registration_update",
+        handleRegistrationUpdate,
+      );
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
@@ -141,6 +195,15 @@ export default function RegistrationsPage() {
         : r,
     );
     db.saveRegistrations(updated);
+    // Sync update to backend so FE sees it on their device
+    updateRegistrationOnBackend(
+      approveReg.id,
+      "Approved",
+      approveReg.paymentStatus,
+      classLink,
+      schedule,
+    );
+    backendFetchRef.current = false;
     load();
     setApproveReg(null);
     setClassLink("");
@@ -161,6 +224,15 @@ export default function RegistrationsPage() {
         : r,
     );
     db.saveRegistrations(updated);
+    // Sync to backend
+    updateRegistrationOnBackend(
+      reg.id,
+      "Rejected",
+      reg.paymentStatus,
+      reg.classLink,
+      reg.schedule,
+    );
+    backendFetchRef.current = false;
     load();
     toast.success(`Registration rejected for ${reg.studentName}`);
   };
@@ -178,6 +250,15 @@ export default function RegistrationsPage() {
         : r,
     );
     db.saveRegistrations(updated);
+    // Sync payment status to backend so FE sees it immediately on their device
+    updateRegistrationOnBackend(
+      reg.id,
+      reg.status,
+      newStatus,
+      reg.classLink,
+      reg.schedule,
+    );
+    backendFetchRef.current = false;
     load();
     toast.success(`Payment marked as ${newStatus} for ${reg.studentName}`);
   };

@@ -35,6 +35,31 @@ type Payment__159206904 =
     studentId : StudentId__449615776;
     txHash : ?Text
   };
+type RegistrationRecord__13950683 =
+  {
+    classLink : Text;
+    courseId : Nat;
+    courseName : Text;
+    courseType : Text;
+    createdAt : Text;
+    feCode : Text;
+    feId : Nat;
+    feName : Text;
+    feePlan : Text;
+    id : Nat;
+    incentiveCalculated : Bool;
+    latitude : ?Float;
+    locationAddress : ?Text;
+    longitude : ?Float;
+    medium : Text;
+    paymentStatus : Text;
+    price : Nat;
+    schedule : Text;
+    status : Text;
+    studentName : Text;
+    studentPhone : Text;
+    updatedAt : Text
+  };
 type Registration__525232183 =
   {
     batch : ?Text;
@@ -67,6 +92,7 @@ actor {
       var root : Node__46230540<StudentId__449615776, [Payment__159206904]>;
       var size : Nat__490723111
     };
+  stable var registrationRecords : [RegistrationRecord__13950683];
   stable registrations :
     {
       var root :

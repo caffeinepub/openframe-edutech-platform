@@ -21,6 +21,11 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useApp } from "../../context/AppContext";
+import {
+  drainSyncQueue,
+  markForSync,
+  syncRegistrationToBackend,
+} from "../../lib/backendService";
 import { db } from "../../lib/storage";
 import type { Course, Registration } from "../../types/models";
 
@@ -74,6 +79,9 @@ export default function RegisterStudentPage() {
 
   useEffect(() => {
     setCourses(db.getCourses().filter((c) => c.isActive));
+
+    // Drain any unsynced registrations from previous sessions
+    drainSyncQueue(db.getRegistrations);
 
     // Capture GPS location on mount
     if ("geolocation" in navigator) {
@@ -153,22 +161,42 @@ export default function RegisterStudentPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 500));
 
-    // Look up FE record — session.id may be a number or string, normalize both sides
+    // Look up FE record — try multiple strategies to find the right FE
     const fes = db.getFEs();
-    const fe = fes.find((f) => String(f.id) === String(session.id));
-
-    // Resolve feId — NEVER allow 0 or NaN
-    const sessionIdNum = Number(session.id);
-    const resolvedFeId =
-      fe?.id ?? (Number.isNaN(sessionIdNum) ? null : sessionIdNum);
-
-    if (!resolvedFeId || resolvedFeId === 0) {
-      toast.error(
-        "Unable to identify your account. Please log out and log in again.",
-      );
-      setLoading(false);
-      return;
+    // Strategy 1: match by id
+    let fe = fes.find((f) => String(f.id) === String(session.id));
+    // Strategy 2: match by phone (if session has phone)
+    if (!fe) {
+      const sessionPhone = (session as { phone?: string }).phone;
+      if (sessionPhone) {
+        fe = fes.find((f) => f.phone === sessionPhone);
+      }
     }
+    // Strategy 3: match by name (if session has name)
+    if (!fe) {
+      const sessionName = (session as { name?: string }).name;
+      if (sessionName) {
+        fe = fes.find(
+          (f) => f.name.toLowerCase() === sessionName.toLowerCase(),
+        );
+      }
+    }
+
+    if (!fe) {
+      console.warn(
+        "[RegisterStudentPage] FE record not found in db for session.id =",
+        session.id,
+        "— using session data as fallback. Registration will proceed.",
+      );
+    }
+
+    // Resolve feId — NEVER allow null or 0; use session.id as the final fallback
+    const sessionIdNum = Number(session.id);
+    const resolvedFeId: number =
+      fe?.id ??
+      (Number.isFinite(sessionIdNum) && sessionIdNum > 0
+        ? sessionIdNum
+        : Date.now()); // last-resort unique id
 
     const price = FEE_PLANS[form.feePlan as FeePlan];
     const feName =
@@ -203,10 +231,32 @@ export default function RegisterStudentPage() {
 
     db.saveRegistrations([...allRegs, newReg]);
 
+    // Step 2: Save to backend canister for cross-device visibility.
+    // Mark as pending first so the drain queue can retry if this fails.
+    markForSync(newReg.id);
+    // Fire-and-forget — don't block the UI
+    syncRegistrationToBackend(newReg).then((ok) => {
+      if (ok) {
+        // Remove from sync queue on success
+        const raw = localStorage.getItem("openframe_sync_queue");
+        if (raw) {
+          const queue: number[] = JSON.parse(raw);
+          localStorage.setItem(
+            "openframe_sync_queue",
+            JSON.stringify(queue.filter((i) => i !== newReg.id)),
+          );
+        }
+      }
+    });
+
     // Signal other tabs (e.g. admin dashboard) to refresh immediately.
     // The 'storage' event only fires in OTHER tabs, so we write a dedicated
     // sync key that all listeners watch for cross-tab notification.
     localStorage.setItem("openframe_last_registration", Date.now().toString());
+
+    // Also dispatch a same-tab custom event so same-window listeners (AdminDashboard,
+    // RegistrationsPage) update immediately without waiting for the poll interval.
+    window.dispatchEvent(new CustomEvent("openframe_registration_update"));
 
     toast.success(`Student ${form.studentName} registered successfully!`);
     setForm({

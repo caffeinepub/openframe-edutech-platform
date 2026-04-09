@@ -9,11 +9,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClipboardList, Edit, Loader2, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
 import { CourseTypeBadge, StatusBadge } from "../../components/StatusBadge";
 import { useApp } from "../../context/AppContext";
+import {
+  fetchFERegistrationsFromBackend,
+  mergeRegistrations,
+} from "../../lib/backendService";
 import { db } from "../../lib/storage";
 import type { Registration } from "../../types/models";
 
@@ -40,16 +44,52 @@ export default function MyStudentsPage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const backendFetchRef = useRef(false);
 
-  const load = () => {
+  const load = useCallback(async () => {
     const sid = session?.id;
     if (!sid) return;
-    setRegs(db.getRegistrations().filter((r) => r.feId === sid));
-  };
+    const localRegs = db.getRegistrations().filter((r) => r.feId === sid);
+
+    if (!backendFetchRef.current) {
+      backendFetchRef.current = true;
+      try {
+        const backendRegs = await fetchFERegistrationsFromBackend(sid);
+        if (backendRegs.length > 0) {
+          const merged = mergeRegistrations(backendRegs, localRegs);
+          // Persist merged (with admin payment updates) to localStorage
+          const allRegs = db.getRegistrations();
+          const idsInMerged = new Set(merged.map((r) => r.id));
+          const otherRegs = allRegs.filter(
+            (r) => r.feId !== sid || !idsInMerged.has(r.id),
+          );
+          db.saveRegistrations([...otherRegs, ...merged]);
+          setRegs(merged);
+          return;
+        }
+      } catch {
+        // fall through to local
+      }
+    }
+
+    setRegs(localRegs);
+  }, [session?.id]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: load is stable within session.id scope
   useEffect(() => {
     load();
-    const interval = setInterval(load, 3000);
+    // Fast local poll for same-device updates
+    const interval = setInterval(() => {
+      const sid = session?.id;
+      if (!sid) return;
+      setRegs(db.getRegistrations().filter((r) => r.feId === sid));
+    }, 3000);
+
+    // Backend re-fetch every 15 seconds for admin payment status updates
+    const backendInterval = setInterval(() => {
+      backendFetchRef.current = false;
+      load();
+    }, 15000);
 
     // Cross-tab sync: reload immediately when another tab writes to localStorage
     const handleStorage = (e: StorageEvent) => {
@@ -58,16 +98,19 @@ export default function MyStudentsPage() {
         e.key === "openframe_registrations" ||
         e.key === "openframe_last_registration"
       ) {
-        load();
+        const sid = session?.id;
+        if (!sid) return;
+        setRegs(db.getRegistrations().filter((r) => r.feId === sid));
       }
     };
     window.addEventListener("storage", handleStorage);
 
     return () => {
       clearInterval(interval);
+      clearInterval(backendInterval);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [session?.id]);
+  }, [session?.id, load]);
 
   const filtered = regs.filter(
     (r) =>

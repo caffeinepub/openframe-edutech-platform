@@ -8,6 +8,30 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const RegistrationRecord = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : IDL.Text,
+  'latitude' : IDL.Opt(IDL.Float64),
+  'paymentStatus' : IDL.Text,
+  'feCode' : IDL.Text,
+  'feName' : IDL.Text,
+  'studentName' : IDL.Text,
+  'feId' : IDL.Nat,
+  'createdAt' : IDL.Text,
+  'feePlan' : IDL.Text,
+  'studentPhone' : IDL.Text,
+  'updatedAt' : IDL.Text,
+  'longitude' : IDL.Opt(IDL.Float64),
+  'schedule' : IDL.Text,
+  'price' : IDL.Nat,
+  'courseName' : IDL.Text,
+  'courseType' : IDL.Text,
+  'classLink' : IDL.Text,
+  'courseId' : IDL.Nat,
+  'locationAddress' : IDL.Opt(IDL.Text),
+  'incentiveCalculated' : IDL.Bool,
+  'medium' : IDL.Text,
+});
 export const StudentId = IDL.Nat;
 export const CourseType = IDL.Variant({
   'premium' : IDL.Null,
@@ -35,6 +59,7 @@ export const DashboardStats = IDL.Record({
 });
 
 export const idlService = IDL.Service({
+  'addRegistrationRecord' : IDL.Func([RegistrationRecord], [], []),
   'assignBatch' : IDL.Func([StudentId, IDL.Text], [], []),
   'createCourse' : IDL.Func(
       [IDL.Text, CourseType, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
@@ -42,19 +67,58 @@ export const idlService = IDL.Service({
       [],
     ),
   'getAllCourses' : IDL.Func([], [IDL.Vec(Course)], ['query']),
+  'getAllRegistrationRecords' : IDL.Func(
+      [],
+      [IDL.Vec(RegistrationRecord)],
+      ['query'],
+    ),
   'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
   'getCourse' : IDL.Func([CourseId], [IDL.Opt(Course)], ['query']),
   'getDashboard' : IDL.Func([], [DashboardStats], ['query']),
+  'getRegistrationRecordsByFE' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(RegistrationRecord)],
+      ['query'],
+    ),
   'getStudent' : IDL.Func([StudentId], [IDL.Opt(Student)], ['query']),
   'processPayment' : IDL.Func([StudentId, IDL.Nat], [], []),
   'registerStudent' : IDL.Func([IDL.Text, IDL.Nat], [StudentId], []),
   'registerStudentForCourse' : IDL.Func([StudentId, CourseId], [], []),
   'setAdmin' : IDL.Func([], [], []),
+  'updateRegistrationRecord' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const RegistrationRecord = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : IDL.Text,
+    'latitude' : IDL.Opt(IDL.Float64),
+    'paymentStatus' : IDL.Text,
+    'feCode' : IDL.Text,
+    'feName' : IDL.Text,
+    'studentName' : IDL.Text,
+    'feId' : IDL.Nat,
+    'createdAt' : IDL.Text,
+    'feePlan' : IDL.Text,
+    'studentPhone' : IDL.Text,
+    'updatedAt' : IDL.Text,
+    'longitude' : IDL.Opt(IDL.Float64),
+    'schedule' : IDL.Text,
+    'price' : IDL.Nat,
+    'courseName' : IDL.Text,
+    'courseType' : IDL.Text,
+    'classLink' : IDL.Text,
+    'courseId' : IDL.Nat,
+    'locationAddress' : IDL.Opt(IDL.Text),
+    'incentiveCalculated' : IDL.Bool,
+    'medium' : IDL.Text,
+  });
   const StudentId = IDL.Nat;
   const CourseType = IDL.Variant({
     'premium' : IDL.Null,
@@ -82,6 +146,7 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
+    'addRegistrationRecord' : IDL.Func([RegistrationRecord], [], []),
     'assignBatch' : IDL.Func([StudentId, IDL.Text], [], []),
     'createCourse' : IDL.Func(
         [IDL.Text, CourseType, IDL.Nat, IDL.Vec(IDL.Text), IDL.Nat],
@@ -89,14 +154,29 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getAllCourses' : IDL.Func([], [IDL.Vec(Course)], ['query']),
+    'getAllRegistrationRecords' : IDL.Func(
+        [],
+        [IDL.Vec(RegistrationRecord)],
+        ['query'],
+      ),
     'getAllStudents' : IDL.Func([], [IDL.Vec(Student)], ['query']),
     'getCourse' : IDL.Func([CourseId], [IDL.Opt(Course)], ['query']),
     'getDashboard' : IDL.Func([], [DashboardStats], ['query']),
+    'getRegistrationRecordsByFE' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(RegistrationRecord)],
+        ['query'],
+      ),
     'getStudent' : IDL.Func([StudentId], [IDL.Opt(Student)], ['query']),
     'processPayment' : IDL.Func([StudentId, IDL.Nat], [], []),
     'registerStudent' : IDL.Func([IDL.Text, IDL.Nat], [StudentId], []),
     'registerStudentForCourse' : IDL.Func([StudentId, CourseId], [], []),
     'setAdmin' : IDL.Func([], [], []),
+    'updateRegistrationRecord' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
   });
 };
 

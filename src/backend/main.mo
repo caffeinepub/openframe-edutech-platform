@@ -63,6 +63,32 @@ actor {
     };
   };
 
+  // Full registration record for cross-device sync
+  public type RegistrationRecord = {
+    id : Nat;
+    studentName : Text;
+    studentPhone : Text;
+    feId : Nat;
+    feName : Text;
+    feCode : Text;
+    courseId : Nat;
+    courseName : Text;
+    courseType : Text;
+    medium : Text;
+    feePlan : Text;
+    price : Nat;
+    status : Text;
+    paymentStatus : Text;
+    classLink : Text;
+    schedule : Text;
+    createdAt : Text;
+    updatedAt : Text;
+    latitude : ?Float;
+    longitude : ?Float;
+    locationAddress : ?Text;
+    incentiveCalculated : Bool;
+  };
+
   // Quiz and exam
   public type Question = {
     text : Text;
@@ -143,6 +169,9 @@ actor {
   let payments = Map.empty<StudentId, [Payment]>();
   var adminPrincipal : ?Principal = null;
 
+  // Stable cross-device registration records
+  var registrationRecords : [RegistrationRecord] = [];
+
   // Course management
   public shared ({ caller }) func createCourse(name : Text, courseType : CourseType, price : Nat, lessons : [Text], passingScore : Nat) : async () {
     requireAdmin(caller);
@@ -215,6 +244,48 @@ actor {
 
   public query func getAllStudents() : async [Student] {
     students.values().toArray().sort();
+  };
+
+  // ---- Cross-device registration sync ----
+
+  /// Add or update a full registration record (called by FE on any device)
+  public shared ({ caller = _ }) func addRegistrationRecord(rec : RegistrationRecord) : async () {
+    // If a record with this id already exists, update it; otherwise append
+    let existing = registrationRecords.filter(func(r : RegistrationRecord) : Bool { r.id != rec.id });
+    registrationRecords := existing.concat([rec]);
+  };
+
+  /// Get all registration records (called by admin to see all FE registrations)
+  public query func getAllRegistrationRecords() : async [RegistrationRecord] {
+    registrationRecords;
+  };
+
+  /// Get registration records for a specific FE (called by FE to see their own registrations)
+  public query func getRegistrationRecordsByFE(feId : Nat) : async [RegistrationRecord] {
+    registrationRecords.filter(func(r : RegistrationRecord) : Bool { r.feId == feId });
+  };
+
+  /// Update payment status and approval details for a registration (called by admin)
+  public shared ({ caller = _ }) func updateRegistrationRecord(
+    id : Nat,
+    status : Text,
+    paymentStatus : Text,
+    classLink : Text,
+    schedule : Text,
+    updatedAt : Text,
+  ) : async () {
+    registrationRecords := registrationRecords.map(func(r : RegistrationRecord) : RegistrationRecord {
+      if (r.id == id) {
+        {
+          r with
+          status = status;
+          paymentStatus = paymentStatus;
+          classLink = classLink;
+          schedule = schedule;
+          updatedAt = updatedAt;
+        };
+      } else { r };
+    });
   };
 
   // Field executive management (omitting for brevity)
