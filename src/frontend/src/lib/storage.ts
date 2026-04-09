@@ -2,6 +2,7 @@ import type {
   ActivityLog,
   BonusSlab,
   Certificate,
+  Commission,
   Course,
   DeductionConfig,
   ExamAttempt,
@@ -12,6 +13,8 @@ import type {
   SalaryConfig,
   SalaryRecord,
   Student,
+  TLSession,
+  TeamLeader,
   TimeLog,
 } from "../types/models";
 
@@ -35,6 +38,10 @@ const KEYS = {
   SEEDED_V4: "openframe_seeded_v4",
   SEEDED_V5: "openframe_seeded_v5",
   UNICODE_CLEANED: "openframe_unicode_cleaned_v4",
+  TLS: "openframe_tls",
+  COMMISSIONS: "openframe_commissions",
+  TL_SESSION: "openframe_tl_session",
+  TL_SEEDED: "openframe_tl_seeded_v1",
 };
 
 function getItem<T>(key: string): T[] {
@@ -646,10 +653,230 @@ export const db = {
     localStorage.setItem(KEYS.SESSION, JSON.stringify(session)),
   clearSession: () => localStorage.removeItem(KEYS.SESSION),
 
-  // Team Leader stubs (future TL system)
-  getTeamLeaders: (): unknown[] => [],
-  saveTeamLeaders: (_tls: unknown[]): void => {},
+  // ---- Team Leader ----
+  getTeamLeaders: (): TeamLeader[] => getItem<TeamLeader>(KEYS.TLS),
+  saveTeamLeaders: (tls: TeamLeader[]) => setItem(KEYS.TLS, tls),
+
+  getTeamLeaderById: (id: string): TeamLeader | undefined =>
+    getItem<TeamLeader>(KEYS.TLS).find((tl) => tl.id === id),
+
+  getTLCommissions: (tlId: string): Commission[] =>
+    getItem<Commission>(KEYS.COMMISSIONS).filter((c) => c.tlId === tlId),
+
+  saveCommission: (c: Commission): void => {
+    const all = getItem<Commission>(KEYS.COMMISSIONS);
+    const idx = all.findIndex((x) => x.id === c.id);
+    if (idx >= 0) all[idx] = c;
+    else all.push(c);
+    setItem(KEYS.COMMISSIONS, all);
+  },
+
+  getTLSession: (): TLSession | null => {
+    try {
+      const raw = localStorage.getItem(KEYS.TL_SESSION);
+      return raw ? (JSON.parse(raw) as TLSession) : null;
+    } catch {
+      return null;
+    }
+  },
+  saveTLSession: (s: TLSession) =>
+    localStorage.setItem(KEYS.TL_SESSION, JSON.stringify(s)),
+  clearTLSession: () => localStorage.removeItem(KEYS.TL_SESSION),
 
   nextId: (items: { id: number }[]): number =>
     items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1,
 };
+
+// ---- TL SEED DATA ----
+export function seedTLData(): void {
+  if (localStorage.getItem(KEYS.TL_SEEDED)) return;
+
+  const now = new Date();
+  const daysAgo = (d: number) => {
+    const dt = new Date(now);
+    dt.setDate(dt.getDate() - d);
+    return dt.toISOString();
+  };
+
+  const tls: TeamLeader[] = [
+    {
+      id: "TL001",
+      name: "Amit Kumar",
+      phone: "9900112233",
+      referralCode: "TL001",
+      assignedFEIds: [1, 2],
+      monthlyTarget: 500,
+      totalCommission: 240,
+      walletBalance: 180,
+      createdAt: daysAgo(90),
+    },
+    {
+      id: "TL002",
+      name: "Priya Singh",
+      phone: "9900223344",
+      referralCode: "TL002",
+      assignedFEIds: [1],
+      monthlyTarget: 500,
+      totalCommission: 120,
+      walletBalance: 80,
+      createdAt: daysAgo(60),
+    },
+  ];
+  setItem(KEYS.TLS, tls);
+
+  const commissions: Commission[] = [
+    {
+      id: "C001",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 1,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(30),
+    },
+    {
+      id: "C002",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 3,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(28),
+    },
+    {
+      id: "C003",
+      tlId: "TL001",
+      feId: 2,
+      feName: "Priya Singh",
+      registrationId: 2,
+      amount: 10,
+      status: "approved",
+      createdAt: daysAgo(20),
+    },
+    {
+      id: "C004",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 1,
+      amount: 10,
+      status: "approved",
+      createdAt: daysAgo(15),
+    },
+    {
+      id: "C005",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 3,
+      amount: 10,
+      status: "pending",
+      createdAt: daysAgo(7),
+    },
+    {
+      id: "C006",
+      tlId: "TL001",
+      feId: 2,
+      feName: "Priya Singh",
+      registrationId: 2,
+      amount: 10,
+      status: "pending",
+      createdAt: daysAgo(5),
+    },
+    {
+      id: "C007",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 1,
+      amount: 10,
+      status: "pending",
+      createdAt: daysAgo(3),
+    },
+    {
+      id: "C008",
+      tlId: "TL001",
+      feId: 2,
+      feName: "Priya Singh",
+      registrationId: 3,
+      amount: 10,
+      status: "pending",
+      createdAt: daysAgo(2),
+    },
+    {
+      id: "C009",
+      tlId: "TL002",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 1,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(25),
+    },
+    {
+      id: "C010",
+      tlId: "TL002",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 3,
+      amount: 10,
+      status: "approved",
+      createdAt: daysAgo(10),
+    },
+    {
+      id: "C011",
+      tlId: "TL002",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 2,
+      amount: 10,
+      status: "pending",
+      createdAt: daysAgo(4),
+    },
+    {
+      id: "C012",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 2,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(45),
+    },
+    {
+      id: "C013",
+      tlId: "TL001",
+      feId: 2,
+      feName: "Priya Singh",
+      registrationId: 1,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(40),
+    },
+    {
+      id: "C014",
+      tlId: "TL001",
+      feId: 1,
+      feName: "Rahul Sharma",
+      registrationId: 3,
+      amount: 10,
+      status: "approved",
+      createdAt: daysAgo(12),
+    },
+    {
+      id: "C015",
+      tlId: "TL001",
+      feId: 2,
+      feName: "Priya Singh",
+      registrationId: 2,
+      amount: 10,
+      status: "paid",
+      createdAt: daysAgo(35),
+    },
+  ];
+  setItem(KEYS.COMMISSIONS, commissions);
+
+  localStorage.setItem(KEYS.TL_SEEDED, "true");
+}

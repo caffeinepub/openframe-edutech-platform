@@ -184,3 +184,35 @@ export interface SalaryRecord {
   paymentStatus: "Pending" | "Approved" | "Paid";
   generatedAt: string;
 }
+
+// ---- Team Leader System ----
+
+export interface TeamLeader {
+  id: string;
+  name: string;
+  phone: string;
+  referralCode: string;
+  assignedFEIds: number[];
+  monthlyTarget: number;
+  totalCommission: number;
+  walletBalance: number;
+  createdAt: string;
+}
+
+export interface Commission {
+  id: string;
+  tlId: string;
+  feId: number;
+  feName: string;
+  registrationId: number;
+  amount: number;
+  status: "pending" | "approved" | "paid";
+  createdAt: string;
+}
+
+export interface TLSession {
+  tlId: string;
+  name: string;
+  phone: string;
+  referralCode: string;
+}

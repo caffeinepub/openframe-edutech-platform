@@ -29,6 +29,7 @@ import ExamPage from "./pages/student/ExamPage";
 import StudentCertificatePage from "./pages/student/StudentCertificatePage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentNotificationsPage from "./pages/student/StudentNotificationsPage";
+import { TLDashboard, TLLogin } from "./pages/tl";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -214,9 +215,24 @@ const studentNotificationsRoute = createRoute({
   component: StudentNotificationsPage,
 });
 
+// ---- TL routes (no layout wrapper — TLDashboard has its own header) ----
+const tlLoginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tl/login",
+  component: TLLogin,
+});
+
+const tlDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tl/dashboard",
+  component: TLDashboard,
+});
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  tlLoginRoute,
+  tlDashboardRoute,
   adminLayoutRoute.addChildren([
     adminDashboardRoute,
     adminFERoute,
