@@ -28,13 +28,11 @@ import { useApp } from "../../context/AppContext";
 import { computeTodayEarnings } from "../../lib/salaryCalc";
 import { db, migrateUnicodeCleanup } from "../../lib/storage";
 import type { FieldExecutive, Registration, TimeLog } from "../../types/models";
-import FEBlockingScreen from "./FEBlockingScreen";
 
 // Commission rules constants
 const MIN_ACTIVE_STUDENTS = 20;
 const DEFAULT_DAILY_TARGET = 5;
 
-// Assignment guard wrapper — checks before mounting dashboard hooks
 function FEDashboardGuard() {
   const { session } = useApp();
   const navigate = useNavigate();
@@ -46,16 +44,6 @@ function FEDashboardGuard() {
   }, [session, navigate]);
 
   if (!session) return null;
-
-  const feRecord = db.getFEs().find((f) => f.id === Number(session.id)) ?? null;
-  const isUnassigned =
-    !feRecord ||
-    feRecord.assignedTL_ID === null ||
-    feRecord.status === "unassigned";
-
-  if (isUnassigned) {
-    return <FEBlockingScreen />;
-  }
 
   return <FEDashboardContent />;
 }
@@ -280,6 +268,18 @@ function FEDashboardContent() {
     toast.success(`Clocked out. Worked ${workHours} hours today.`);
   }
 
+  const isUnassigned =
+    !feData || feData.assignedTL_ID === null || feData.status === "unassigned";
+
+  // Resolve assigned TL name if assigned
+  const assignedTLName = feData?.assignedTL_ID
+    ? (() => {
+        const tls = db.getTeamLeaders();
+        const tl = tls.find((t) => t.id === feData.assignedTL_ID);
+        return tl?.name ?? null;
+      })()
+    : null;
+
   const dailyTarget = feData?.dailyTarget ?? DEFAULT_DAILY_TARGET;
   const weeklyTarget = feData?.weeklyTarget ?? 25;
   const monthlyTarget = feData?.monthlyTarget ?? 100;
@@ -339,8 +339,51 @@ function FEDashboardContent() {
         </h1>
         <p className="text-muted-foreground text-sm mt-0.5">
           {session?.feCode} • Field Executive Dashboard
+          {assignedTLName && (
+            <span className="ml-2 text-green-600 font-medium">
+              • Team Leader: {assignedTLName}
+            </span>
+          )}
         </p>
       </div>
+
+      {/* Soft unassigned notice — informational only, not a blocker */}
+      {isUnassigned && (
+        <div
+          className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-start gap-3"
+          data-ocid="fe.unassigned_notice.banner"
+        >
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">
+              Not yet assigned to a Team Leader
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              You are not assigned to a Team Leader yet. Please wait for admin
+              assignment. You can explore the dashboard, but student
+              registration is disabled until you are assigned.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-400 text-amber-700 hover:bg-amber-100 flex-shrink-0 text-xs h-7"
+            onClick={() => {
+              navigator.clipboard
+                .writeText("Contact admin: akashrajnayak")
+                .then(() => toast.success("Admin contact info copied!"))
+                .catch(() =>
+                  toast.info("Admin contact: akashrajnayak", {
+                    duration: 6000,
+                  }),
+                );
+            }}
+            data-ocid="fe.unassigned_notice.contact_admin_button"
+          >
+            Contact Admin
+          </Button>
+        </div>
+      )}
 
       {/* Commission Rules Banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex flex-wrap gap-4 text-sm">

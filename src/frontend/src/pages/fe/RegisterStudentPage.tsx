@@ -196,6 +196,65 @@ export default function RegisterStudentPage() {
     setLoading(false);
   };
 
+  // Check if FE is assigned to a TL — show locked state if not
+  const feRecord = session?.id
+    ? db.getFEs().find((f) => f.id === session.id)
+    : null;
+  const isUnassigned =
+    !feRecord ||
+    feRecord.assignedTL_ID === null ||
+    feRecord.status === "unassigned";
+
+  if (isUnassigned) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">
+            Register New Student
+          </h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Fill in the details to register a new student under your account
+          </p>
+        </div>
+        <div
+          className="max-w-lg bg-amber-50 border border-amber-200 rounded-xl p-8 flex flex-col items-center text-center gap-4"
+          data-ocid="fe.register_student.locked_state"
+        >
+          <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
+            <UserPlus className="h-7 w-7 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-amber-800">
+              Assignment Required to Register Students
+            </p>
+            <p className="text-sm text-amber-700 mt-1 leading-relaxed">
+              You are not yet assigned to a Team Leader. Please wait for the
+              admin to assign you, then you can start registering students.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-400 text-amber-700 hover:bg-amber-100"
+            onClick={() => {
+              navigator.clipboard
+                .writeText("Contact admin: akashrajnayak")
+                .then(() => toast.success("Admin contact info copied!"))
+                .catch(() =>
+                  toast.info("Admin contact: akashrajnayak", {
+                    duration: 6000,
+                  }),
+                );
+            }}
+            data-ocid="fe.register_student.contact_admin_button"
+          >
+            Contact Admin
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">

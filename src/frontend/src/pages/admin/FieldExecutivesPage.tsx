@@ -21,7 +21,7 @@ import type { FieldExecutive, TeamLeader } from "../../types/models";
 
 const MIN_ACTIVE_STUDENTS = 20;
 const COMMISSION_RATE = db.getAdminConfig().feIncentiveRate;
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 3000;
 
 // ---- helpers ----
 function timeAgo(ts: number): string {
@@ -213,17 +213,50 @@ export default function FieldExecutivesPage() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const toastId = useRef(0);
 
-  const loadData = useCallback(() => {
+  // Use a ref so the interval callback always calls the latest version
+  // of loadData without stale closure issues.
+  const loadDataRef = useRef<() => void>(() => {});
+
+  loadDataRef.current = () => {
     setFEs(db.getFEs());
     setUnassigned(getUnassignedFEs());
     setTLs(db.getTeamLeaders());
+  };
+
+  const loadData = useCallback(() => {
+    loadDataRef.current();
   }, []);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    // Immediate load on mount
+    loadDataRef.current();
+
+    // Polling every 3s — always reads fresh from localStorage
+    const interval = setInterval(() => {
+      loadDataRef.current();
+    }, POLL_INTERVAL_MS);
+
+    // React to cross-tab localStorage writes (storage event)
+    function handleStorageEvent(e: StorageEvent) {
+      if (e.key === null || e.key.startsWith("openframe_")) {
+        loadDataRef.current();
+      }
+    }
+
+    // React to same-tab FE registration (custom event dispatched by LoginPage)
+    function handleFEUpdated() {
+      loadDataRef.current();
+    }
+
+    window.addEventListener("storage", handleStorageEvent);
+    window.addEventListener("openframe:fe_updated", handleFEUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorageEvent);
+      window.removeEventListener("openframe:fe_updated", handleFEUpdated);
+    };
+  }, []);
 
   function addToast(text: string) {
     const id = ++toastId.current;

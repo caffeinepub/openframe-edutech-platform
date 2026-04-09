@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, Loader2, Search } from "lucide-react";
+import { ClipboardList, Edit, Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
@@ -82,6 +82,29 @@ export default function MyStudentsPage() {
           {filtered.length} students registered by you
         </p>
       </div>
+
+      {/* Soft notice if FE is not yet assigned to a TL */}
+      {(() => {
+        const feRecord = session?.id
+          ? db.getFEs().find((f) => f.id === session.id)
+          : null;
+        const unassigned =
+          !feRecord ||
+          feRecord.assignedTL_ID === null ||
+          feRecord.status === "unassigned";
+        return unassigned ? (
+          <div
+            className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3"
+            data-ocid="fe.my_students.unassigned_notice"
+          >
+            <ClipboardList className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-700">
+              You are not yet assigned to a Team Leader. Students you register
+              will appear here once you are assigned and begin registrations.
+            </p>
+          </div>
+        ) : null;
+      })()}
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

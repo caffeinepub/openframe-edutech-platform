@@ -64,15 +64,17 @@ function setItem<T>(key: string, data: T[]): void {
 // ---- MIGRATION ----
 export function migrateUnicodeCleanup(): void {
   if (localStorage.getItem(KEYS.UNICODE_CLEANED)) return;
-  // Clear ALL previous migration flags so we always re-run with the latest cleaner
+  // Clear old versioned unicode-cleanup flags
   localStorage.removeItem("openframe_unicode_cleaned_v1");
   localStorage.removeItem("openframe_unicode_cleaned_v2");
   localStorage.removeItem("openframe_unicode_cleaned_v3");
   // Force-clear all openframe data keys so any stale encoded data is wiped.
-  // The app will re-seed with clean UTF-8 values on next load.
+  // Preserve session keys and migration guard flags so we don't create infinite
+  // re-wipe loops when multiple migrations run in sequence on the same page load.
+  const PRESERVE = new Set([KEYS.SESSION, KEYS.TL_SESSION, KEYS.MIGRATED_V7]);
   const allKeys = Object.keys(localStorage);
   for (const key of allKeys) {
-    if (key.startsWith("openframe_") && key !== KEYS.SESSION) {
+    if (key.startsWith("openframe_") && !PRESERVE.has(key)) {
       localStorage.removeItem(key);
     }
   }
@@ -148,14 +150,18 @@ function migrateV6(): void {
 // ---- MIGRATION V7: incentiveCalculated on registrations + AdminConfig defaults ----
 function migrateV7(): void {
   if (localStorage.getItem(KEYS.MIGRATED_V7)) return;
-  // Clear all openframe_* keys except session and TL_SESSION to flush stale data
+  // Clear all openframe_* keys except session, TL_SESSION and the unicode-cleaned flag.
+  // Preserving UNICODE_CLEANED prevents migrateUnicodeCleanup (which runs right after)
+  // from triggering a second full wipe in the same load, which would delete any FE
+  // records written by a login flow that ran before the admin's app load.
+  const PRESERVE = new Set([
+    KEYS.SESSION,
+    KEYS.TL_SESSION,
+    KEYS.UNICODE_CLEANED,
+  ]);
   const allKeys = Object.keys(localStorage);
   for (const key of allKeys) {
-    if (
-      key.startsWith("openframe_") &&
-      key !== KEYS.SESSION &&
-      key !== KEYS.TL_SESSION
-    ) {
+    if (key.startsWith("openframe_") && !PRESERVE.has(key)) {
       localStorage.removeItem(key);
     }
   }
@@ -778,10 +784,13 @@ export const db = {
 
 // ---- FE ASSIGNMENT HELPERS ----
 
-/** Returns all FEs that have no assigned TL (status === 'unassigned' or assignedTL_ID is null). */
+/** Returns all FEs that have no assigned TL (status === 'unassigned' or assignedTL_ID is null/undefined). */
 export function getUnassignedFEs(): FieldExecutive[] {
   return getItem<FieldExecutive>(KEYS.FES).filter(
-    (fe) => fe.status === "unassigned" || fe.assignedTL_ID === null,
+    (fe) =>
+      fe.status === "unassigned" ||
+      fe.assignedTL_ID === null ||
+      fe.assignedTL_ID === undefined,
   );
 }
 

@@ -84,11 +84,7 @@ export default function LoginPage() {
         feCode: matched.feCode,
       });
       toast.success(`Welcome back, ${matched.name}!`);
-      if (matched.assignedTL_ID === null || matched.status === "unassigned") {
-        navigate({ to: "/fe/blocked" });
-      } else {
-        navigate({ to: "/fe/dashboard" });
-      }
+      navigate({ to: "/fe/dashboard" });
     } else {
       // No principal match — show self-registration form
       setFeStep("linking");
@@ -136,6 +132,8 @@ export default function LoginPage() {
           f.id === existingByPhone.id ? { ...f, principal: principalStr } : f,
         );
         db.saveFEs(updated);
+        // Notify admin page of the FE state change
+        window.dispatchEvent(new CustomEvent("openframe:fe_updated"));
         login({
           role: "fe",
           id: existingByPhone.id,
@@ -144,14 +142,7 @@ export default function LoginPage() {
           feCode: existingByPhone.feCode,
         });
         toast.success(`Welcome back, ${existingByPhone.name}!`);
-        if (
-          existingByPhone.assignedTL_ID === null ||
-          existingByPhone.status === "unassigned"
-        ) {
-          navigate({ to: "/fe/blocked" });
-        } else {
-          navigate({ to: "/fe/dashboard" });
-        }
+        navigate({ to: "/fe/dashboard" });
         setLinkLoading(false);
         return;
       }
@@ -190,6 +181,9 @@ export default function LoginPage() {
       lastLoginDate: Date.now(),
     };
     db.saveFEs([...allFEs, newFE]);
+    // Notify any open admin tab/page that a new FE has been registered
+    // so the FieldExecutivesPage can refresh immediately without waiting for its poll.
+    window.dispatchEvent(new CustomEvent("openframe:fe_updated"));
 
     login({
       role: "fe",
@@ -201,8 +195,8 @@ export default function LoginPage() {
     toast.success(
       `Welcome, ${newFE.name}! Your FE account (${feCode}) has been created.`,
     );
-    // New FEs start unassigned — send to blocked screen
-    navigate({ to: "/fe/blocked" });
+    // New FEs start unassigned — take directly to dashboard with soft notice
+    navigate({ to: "/fe/dashboard" });
     setLinkLoading(false);
   };
 
