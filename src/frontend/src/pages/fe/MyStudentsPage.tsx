@@ -47,7 +47,27 @@ export default function MyStudentsPage() {
     setRegs(db.getRegistrations().filter((r) => r.feId === sid));
   };
   // biome-ignore lint/correctness/useExhaustiveDependencies: load is stable within session.id scope
-  useEffect(load, [session?.id]);
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 3000);
+
+    // Cross-tab sync: reload immediately when another tab writes to localStorage
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === null ||
+        e.key === "openframe_registrations" ||
+        e.key === "openframe_last_registration"
+      ) {
+        load();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [session?.id]);
 
   const filtered = regs.filter(
     (r) =>
@@ -83,7 +103,7 @@ export default function MyStudentsPage() {
         </p>
       </div>
 
-      {/* Soft notice if FE is not yet assigned to a TL */}
+      {/* Soft notice if FE is not yet assigned to a TL — informational only */}
       {(() => {
         const feRecord = session?.id
           ? db.getFEs().find((f) => f.id === session.id)
@@ -99,8 +119,9 @@ export default function MyStudentsPage() {
           >
             <ClipboardList className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-amber-700">
-              You are not yet assigned to a Team Leader. Students you register
-              will appear here once you are assigned and begin registrations.
+              You have not been assigned to a Team Leader yet. You can still
+              register and manage students — a Team Leader will be assigned to
+              you later by the admin.
             </p>
           </div>
         ) : null;

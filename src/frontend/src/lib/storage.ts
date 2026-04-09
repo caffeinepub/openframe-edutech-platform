@@ -46,7 +46,13 @@ const KEYS = {
   TL_SESSION: "openframe_tl_session",
   TL_SEEDED: "openframe_tl_seeded_v1",
   ADMIN_CONFIG: "openframe_admin_config",
+  // This key is NEVER wiped by any migration — it guards all migrations from re-running.
+  MIGRATION_VERSION: "openframe_migration_version",
 };
+
+// Current migration version. Bump this when adding a new destructive migration.
+// Migrations ≤ this version will only run if the stored version is lower.
+const CURRENT_MIGRATION_VERSION = 8;
 
 function getItem<T>(key: string): T[] {
   try {
@@ -61,27 +67,68 @@ function setItem<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+// ---- MIGRATION VERSION GUARD ----
+function getStoredMigrationVersion(): number {
+  try {
+    const raw = localStorage.getItem(KEYS.MIGRATION_VERSION);
+    if (!raw) return 0;
+    const v = Number.parseInt(raw, 10);
+    return Number.isNaN(v) ? 0 : v;
+  } catch {
+    return 0;
+  }
+}
+
+function setMigrationVersion(v: number): void {
+  localStorage.setItem(KEYS.MIGRATION_VERSION, String(v));
+}
+
 // ---- MIGRATION ----
+
+/**
+ * migrateUnicodeCleanup — version 8.
+ * Clears stale schema/seed data BUT never touches REGISTRATIONS (real user data).
+ * Runs only once: guarded by MIGRATION_VERSION key (which is never wiped).
+ */
 export function migrateUnicodeCleanup(): void {
-  if (localStorage.getItem(KEYS.UNICODE_CLEANED)) return;
-  // Clear old versioned unicode-cleanup flags
+  const stored = getStoredMigrationVersion();
+  if (stored >= 8) return;
+
+  // Clear old individual migration flags that may be stale
   localStorage.removeItem("openframe_unicode_cleaned_v1");
   localStorage.removeItem("openframe_unicode_cleaned_v2");
   localStorage.removeItem("openframe_unicode_cleaned_v3");
-  // Force-clear all openframe data keys so any stale encoded data is wiped.
-  // Preserve session keys and migration guard flags so we don't create infinite
-  // re-wipe loops when multiple migrations run in sequence on the same page load.
-  const PRESERVE = new Set([KEYS.SESSION, KEYS.TL_SESSION, KEYS.MIGRATED_V7]);
+
+  // Keys that must never be wiped: session data, real user data, and the migration version guard.
+  const PRESERVE = new Set([
+    KEYS.SESSION,
+    KEYS.TL_SESSION,
+    KEYS.MIGRATION_VERSION,
+    KEYS.REGISTRATIONS, // Real user data — never wipe
+    KEYS.STUDENTS, // Real user data — never wipe
+    KEYS.COMMISSIONS, // Real user data — never wipe
+    KEYS.CERTIFICATES, // Real user data — never wipe
+    KEYS.EXAM_ATTEMPTS, // Real user data — never wipe
+    KEYS.NOTIFICATIONS, // Real user data — never wipe
+    KEYS.ACTIVITY_LOGS, // Real user data — never wipe
+    KEYS.TIME_LOGS, // Real user data — never wipe
+  ]);
+
   const allKeys = Object.keys(localStorage);
   for (const key of allKeys) {
     if (key.startsWith("openframe_") && !PRESERVE.has(key)) {
       localStorage.removeItem(key);
     }
   }
-  localStorage.setItem(KEYS.UNICODE_CLEANED, "true");
+
+  // Write the new version LAST so if anything fails mid-migration, it retries next load.
+  setMigrationVersion(8);
 }
 
 function migrateV1(): void {
+  // Guard: only run if not already handled by the version system
+  const stored = getStoredMigrationVersion();
+  if (stored >= 8) return; // v8 migration handles this phase
   if (localStorage.getItem(KEYS.MIGRATED_V1)) return;
   const fes = getItem<FieldExecutive>(KEYS.FES);
   const migrated = fes.map((fe) =>
@@ -147,27 +194,6 @@ function migrateV6(): void {
   localStorage.setItem(KEYS.SEEDED_V6, "true");
 }
 
-// ---- MIGRATION V7: incentiveCalculated on registrations + AdminConfig defaults ----
-function migrateV7(): void {
-  if (localStorage.getItem(KEYS.MIGRATED_V7)) return;
-  // Clear all openframe_* keys except session, TL_SESSION and the unicode-cleaned flag.
-  // Preserving UNICODE_CLEANED prevents migrateUnicodeCleanup (which runs right after)
-  // from triggering a second full wipe in the same load, which would delete any FE
-  // records written by a login flow that ran before the admin's app load.
-  const PRESERVE = new Set([
-    KEYS.SESSION,
-    KEYS.TL_SESSION,
-    KEYS.UNICODE_CLEANED,
-  ]);
-  const allKeys = Object.keys(localStorage);
-  for (const key of allKeys) {
-    if (key.startsWith("openframe_") && !PRESERVE.has(key)) {
-      localStorage.removeItem(key);
-    }
-  }
-  localStorage.setItem(KEYS.MIGRATED_V7, "true");
-}
-
 const ORDINALS = [
   "1st",
   "2nd",
@@ -192,7 +218,8 @@ function makeCourseTitle(
 
 // ---- SEED DATA ----
 export function seedIfNeeded(): void {
-  migrateV7();
+  // Run the unicode/schema cleanup migration exactly once.
+  // migrateUnicodeCleanup is guarded by MIGRATION_VERSION, which is never wiped.
   migrateUnicodeCleanup();
   migrateV1();
 
@@ -554,7 +581,10 @@ export function seedIfNeeded(): void {
   setItem(KEYS.QUESTIONS, questions);
   setItem(KEYS.FES, fes);
   setItem(KEYS.STUDENTS, students);
-  setItem(KEYS.REGISTRATIONS, registrations);
+  // Only seed registrations if none exist yet — preserve any live registrations
+  if (getItem<Registration>(KEYS.REGISTRATIONS).length === 0) {
+    setItem(KEYS.REGISTRATIONS, registrations);
+  }
   setItem(KEYS.EXAM_ATTEMPTS, examAttempts);
   setItem(KEYS.CERTIFICATES, certificates);
   setItem(KEYS.NOTIFICATIONS, notifications);
@@ -573,6 +603,8 @@ export function seedIfNeeded(): void {
   // Mark V5 and V6 as done since we seeded with correct values
   localStorage.setItem(KEYS.SEEDED_V5, "true");
   localStorage.setItem(KEYS.SEEDED_V6, "true");
+  // Mark the current migration version so migrations don't run again
+  setMigrationVersion(CURRENT_MIGRATION_VERSION);
 }
 
 // ---- SALARY SEED ----

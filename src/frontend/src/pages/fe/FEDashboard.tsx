@@ -347,7 +347,7 @@ function FEDashboardContent() {
         </p>
       </div>
 
-      {/* Soft unassigned notice — informational only, not a blocker */}
+      {/* Soft unassigned notice — informational only, nothing is locked */}
       {isUnassigned && (
         <div
           className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-start gap-3"
@@ -356,32 +356,14 @@ function FEDashboardContent() {
           <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-800">
-              Not yet assigned to a Team Leader
+              Team Leader not yet assigned
             </p>
             <p className="text-xs text-amber-700 mt-0.5">
-              You are not assigned to a Team Leader yet. Please wait for admin
-              assignment. You can explore the dashboard, but student
-              registration is disabled until you are assigned.
+              You have not been assigned to a Team Leader yet. You can still
+              work — register students, view earnings, and use all features. A
+              Team Leader will be assigned to you later by the admin.
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-amber-400 text-amber-700 hover:bg-amber-100 flex-shrink-0 text-xs h-7"
-            onClick={() => {
-              navigator.clipboard
-                .writeText("Contact admin: akashrajnayak")
-                .then(() => toast.success("Admin contact info copied!"))
-                .catch(() =>
-                  toast.info("Admin contact: akashrajnayak", {
-                    duration: 6000,
-                  }),
-                );
-            }}
-            data-ocid="fe.unassigned_notice.contact_admin_button"
-          >
-            Contact Admin
-          </Button>
         </div>
       )}
 

@@ -181,6 +181,19 @@ export default function LoginPage() {
       lastLoginDate: Date.now(),
     };
     db.saveFEs([...allFEs, newFE]);
+
+    // Create admin notification so it appears in the Admin Notifications panel
+    const allNotifs = db.getNotifications();
+    const adminNotif = {
+      id: db.nextId(allNotifs),
+      recipientType: "all" as const,
+      recipientId: null,
+      message: `New Field Executive "${newFE.name}" (${feCode}, Phone: ${newFE.phone}) has registered and is waiting for Team Leader assignment.`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    db.saveNotifications([adminNotif, ...allNotifs]);
+
     // Notify any open admin tab/page that a new FE has been registered
     // so the FieldExecutivesPage can refresh immediately without waiting for its poll.
     window.dispatchEvent(new CustomEvent("openframe:fe_updated"));

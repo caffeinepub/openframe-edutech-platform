@@ -11,7 +11,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "@tanstack/react-router";
-import { IndianRupee, Loader2, MapPin, UserPlus } from "lucide-react";
+import {
+  AlertTriangle,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  UserPlus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useApp } from "../../context/AppContext";
@@ -147,23 +153,36 @@ export default function RegisterStudentPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 500));
 
+    // Look up FE record — session.id may be a number or string, normalize both sides
     const fes = db.getFEs();
-    const fe = fes.find((f) => f.id === session.id);
-    if (!fe) {
-      toast.error("FE not found");
+    const fe = fes.find((f) => String(f.id) === String(session.id));
+
+    // Resolve feId — NEVER allow 0 or NaN
+    const sessionIdNum = Number(session.id);
+    const resolvedFeId =
+      fe?.id ?? (Number.isNaN(sessionIdNum) ? null : sessionIdNum);
+
+    if (!resolvedFeId || resolvedFeId === 0) {
+      toast.error(
+        "Unable to identify your account. Please log out and log in again.",
+      );
       setLoading(false);
       return;
     }
 
     const price = FEE_PLANS[form.feePlan as FeePlan];
+    const feName =
+      fe?.name ?? (session as { name?: string }).name ?? "Unknown FE";
+    const feCode =
+      fe?.feCode ?? (session as { feCode?: string }).feCode ?? "FE???";
 
     const newReg: Registration = {
       id: db.nextId(allRegs),
       studentName: form.studentName.trim(),
       studentPhone: form.studentPhone.trim(),
-      feId: fe.id,
-      feName: fe.name,
-      feCode: fe.feCode,
+      feId: resolvedFeId,
+      feName,
+      feCode,
       courseId: selectedCourse.id,
       courseName: selectedCourse.title,
       courseType: selectedCourse.courseType,
@@ -183,6 +202,12 @@ export default function RegisterStudentPage() {
     };
 
     db.saveRegistrations([...allRegs, newReg]);
+
+    // Signal other tabs (e.g. admin dashboard) to refresh immediately.
+    // The 'storage' event only fires in OTHER tabs, so we write a dedicated
+    // sync key that all listeners watch for cross-tab notification.
+    localStorage.setItem("openframe_last_registration", Date.now().toString());
+
     toast.success(`Student ${form.studentName} registered successfully!`);
     setForm({
       studentName: "",
@@ -196,64 +221,14 @@ export default function RegisterStudentPage() {
     setLoading(false);
   };
 
-  // Check if FE is assigned to a TL — show locked state if not
+  // Check if FE has a TL assigned — informational banner only, form is always accessible
   const feRecord = session?.id
-    ? db.getFEs().find((f) => f.id === session.id)
+    ? db.getFEs().find((f) => String(f.id) === String(session.id))
     : null;
-  const isUnassigned =
+  const showUnassignedBanner =
     !feRecord ||
     feRecord.assignedTL_ID === null ||
     feRecord.status === "unassigned";
-
-  if (isUnassigned) {
-    return (
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">
-            Register New Student
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Fill in the details to register a new student under your account
-          </p>
-        </div>
-        <div
-          className="max-w-lg bg-amber-50 border border-amber-200 rounded-xl p-8 flex flex-col items-center text-center gap-4"
-          data-ocid="fe.register_student.locked_state"
-        >
-          <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
-            <UserPlus className="h-7 w-7 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-amber-800">
-              Assignment Required to Register Students
-            </p>
-            <p className="text-sm text-amber-700 mt-1 leading-relaxed">
-              You are not yet assigned to a Team Leader. Please wait for the
-              admin to assign you, then you can start registering students.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-amber-400 text-amber-700 hover:bg-amber-100"
-            onClick={() => {
-              navigator.clipboard
-                .writeText("Contact admin: akashrajnayak")
-                .then(() => toast.success("Admin contact info copied!"))
-                .catch(() =>
-                  toast.info("Admin contact: akashrajnayak", {
-                    duration: 6000,
-                  }),
-                );
-            }}
-            data-ocid="fe.register_student.contact_admin_button"
-          >
-            Contact Admin
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">
@@ -266,10 +241,25 @@ export default function RegisterStudentPage() {
         </p>
       </div>
 
+      {/* Soft informational banner — does NOT lock the form */}
+      {showUnassignedBanner && (
+        <div
+          className="max-w-lg mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3"
+          data-ocid="fe.register_student.unassigned_notice"
+        >
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700">
+            You have not been assigned to a Team Leader yet. You can still
+            register students — a Team Leader will be assigned later by the
+            admin.
+          </p>
+        </div>
+      )}
+
       <div className="max-w-lg">
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl border border-border shadow-card p-6 space-y-5"
+          className="bg-card rounded-xl border border-border shadow-card p-6 space-y-5"
           data-ocid="fe.register_student.section"
         >
           {/* Location indicator */}

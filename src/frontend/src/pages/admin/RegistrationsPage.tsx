@@ -26,7 +26,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/EmptyState";
 import { CourseTypeBadge, StatusBadge } from "../../components/StatusBadge";
@@ -69,8 +69,46 @@ export default function RegistrationsPage() {
   const [schedule, setSchedule] = useState("");
   const [approveLoading, setApproveLoading] = useState(false);
 
-  const load = () => setRegs(db.getRegistrations());
-  useEffect(load, []);
+  // Load ALL registrations — no feId filtering on the admin side
+  const load = useCallback(() => {
+    setRegs(db.getRegistrations());
+  }, []);
+
+  useEffect(() => {
+    load();
+    // Poll every 1 second for new registrations from FE tabs
+    const interval = setInterval(load, 1000);
+
+    // Cross-tab sync: reload immediately when another tab writes to localStorage
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === null ||
+        e.key === "openframe_registrations" ||
+        e.key === "openframe_last_registration"
+      ) {
+        load();
+      }
+    };
+
+    // Also reload immediately when the tab regains focus — catches cross-tab writes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        load();
+      }
+    };
+    const handleFocus = () => load();
+
+    window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [load]);
 
   const filtered = regs.filter((r) => {
     const matchSearch =
@@ -218,7 +256,7 @@ export default function RegistrationsPage() {
         </Select>
       </div>
 
-      <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
+      <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
         {filtered.length === 0 ? (
           <EmptyState
             title="No registrations found"
