@@ -9,33 +9,38 @@ export function cn(...inputs: ClassValue[]): string {
 /**
  * Format a number as Indian Rupee currency.
  * Outputs: ₹950, ₹9,100, ₹1,50,000
- * Always uses the literal ₹ character — never \u20b9 escape sequences.
+ *
+ * IMPORTANT: We intentionally do NOT use Intl.NumberFormat with
+ * style:"currency" / currency:"INR" because in certain JS environments
+ * (older V8, some mobile browsers) it emits the literal 6-character
+ * escape sequence \u20b9 as plain text rather than the ₹ glyph.
+ *
+ * Instead we format numbers only (no currency style) and prepend the
+ * actual ₹ character directly in source code as a UTF-8 literal.
  */
-export function formatCurrency(amount: number): string {
-  const formatted = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-  // Safety net: some environments output \u20b9 as literal 6-char escape.
-  // Replace all variants with the actual ₹ character.
-  return sanitizeCurrencyString(formatted);
+export function formatCurrency(amount: number | string): string {
+  const num =
+    typeof amount === "string" ? Number.parseFloat(amount) || 0 : (amount ?? 0);
+  // Use Intl only for number grouping (en-IN gives Indian lakh/crore groups)
+  const formatted = new Intl.NumberFormat("en-IN").format(num);
+  // Prepend the actual ₹ character — written as a UTF-8 literal in source,
+  // never as a \uXXXX escape, so the bundler preserves the real glyph.
+  return `₹${formatted}`;
 }
 
 /**
- * Internal helper — replaces all known encoded forms of ₹ and — with real chars.
- * Handles: literal \u20b9 (6 chars), \\u20b9 (7 chars), %E2%82%B9 (URL-encoded),
- * and the double-encoded \\\\u20b9 variant.
+ * Replace ALL known encoded forms of the ₹ symbol and — dash with real chars.
+ * This is a safety net for data that was already stored with escape sequences.
  */
-function sanitizeCurrencyString(str: string): string {
+export function sanitizeCurrencyString(str: string): string {
   if (typeof str !== "string") return str;
   return (
     str
       // URL-encoded ₹
       .replace(/%E2%82%B9/gi, "₹")
-      // Double-backslash encoded (\\u20b9 stored as literal chars)
+      // Double-backslash encoded (\\u20b9 as 7 literal chars)
       .replace(/\\\\u20[bB]9/g, "₹")
-      // Single-backslash encoded (\u20b9 stored as literal chars, 6 chars)
+      // Single-backslash encoded (\u20b9 as 6 literal chars)
       .replace(/\\u20[bB]9/g, "₹")
       // URL-encoded em dash
       .replace(/%E2%80%94/gi, "—")
@@ -56,7 +61,6 @@ export function decodeUnicode(str: string): string {
   const sanitized = sanitizeCurrencyString(str);
   // Second pass: attempt JSON-parse decode for any remaining escapes
   try {
-    // Only attempt if there's a backslash-u pattern remaining
     if (!/\\u[0-9a-fA-F]{4}/.test(sanitized)) return sanitized;
     const escaped = sanitized.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     return JSON.parse(`"${escaped}"`);
@@ -67,15 +71,14 @@ export function decodeUnicode(str: string): string {
 
 /**
  * Universal currency display helper.
- * - Numbers: formats with formatCurrency() then sanitizes
- * - Strings: decodes any unicode escapes then sanitizes
- * - Ensures ₹ always renders correctly regardless of input source
+ * - Numbers: formats with formatCurrency() — always uses literal ₹
+ * - Strings: sanitizes any escape sequences then returns clean value
  */
 export function sanitizeCurrency(value: number | string): string {
   if (typeof value === "number") {
     return formatCurrency(value);
   }
-  // String path: decode unicode then sanitize
-  const decoded = decodeUnicode(value);
+  // String path: decode unicode escapes then sanitize
+  const decoded = decodeUnicode(String(value));
   return sanitizeCurrencyString(decoded);
 }

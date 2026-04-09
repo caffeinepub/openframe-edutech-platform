@@ -34,7 +34,7 @@ const KEYS = {
   DEDUCTION_CONFIG: "openframe_deduction_config",
   SEEDED_V4: "openframe_seeded_v4",
   SEEDED_V5: "openframe_seeded_v5",
-  UNICODE_CLEANED: "openframe_unicode_cleaned_v3",
+  UNICODE_CLEANED: "openframe_unicode_cleaned_v4",
 };
 
 function getItem<T>(key: string): T[] {
@@ -50,86 +50,24 @@ function setItem<T>(key: string, data: T[]): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
-// ---- UNICODE CLEANUP MIGRATION ----
-// Scans all localStorage keys used by this app and decodes any double-encoded
-// unicode escape sequences (e.g. literal "\\u20b9" → "₹", "\\u2014" → "—").
-function cleanupUnicode(str: string): string {
-  if (typeof str !== "string") return str;
-  let result = str;
-  // Pass 1: URL-encoded forms
-  result = result.replace(/%E2%82%B9/gi, "₹");
-  result = result.replace(/%E2%80%94/gi, "—");
-  // Pass 2: double-backslash encoded (\\u20b9 as 7 literal chars)
-  result = result.replace(/\\\\u20[bB]9/g, "₹");
-  result = result.replace(/\\\\u2014/g, "—");
-  // Pass 3: single-backslash encoded (\u20b9 as 6 literal chars)
-  result = result.replace(/\\u20[bB]9/g, "₹");
-  result = result.replace(/\\u2014/g, "—");
-  // Pass 4: any remaining \uXXXX patterns (generic fallback)
-  result = result.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-    String.fromCharCode(Number.parseInt(hex, 16)),
-  );
-  return result;
-}
-
-function cleanObjectUnicode<T>(obj: T): T {
-  if (typeof obj === "string") return cleanupUnicode(obj) as unknown as T;
-  if (Array.isArray(obj)) return obj.map(cleanObjectUnicode) as unknown as T;
-  if (obj !== null && typeof obj === "object") {
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(obj as Record<string, unknown>)) {
-      result[key] = cleanObjectUnicode((obj as Record<string, unknown>)[key]);
-    }
-    return result as T;
-  }
-  return obj;
-}
-
+// ---- MIGRATION ----
 export function migrateUnicodeCleanup(): void {
   if (localStorage.getItem(KEYS.UNICODE_CLEANED)) return;
-  // Clear old migration flags so we re-run with the improved cleaner
+  // Clear ALL previous migration flags so we always re-run with the latest cleaner
   localStorage.removeItem("openframe_unicode_cleaned_v1");
   localStorage.removeItem("openframe_unicode_cleaned_v2");
-  const keysToClean = [
-    KEYS.REGISTRATIONS,
-    KEYS.STUDENTS,
-    KEYS.FES,
-    KEYS.COURSES,
-    KEYS.NOTIFICATIONS,
-    KEYS.SALARY_CONFIGS,
-    KEYS.SALARY_RECORDS,
-    KEYS.TIME_LOGS,
-    KEYS.ACTIVITY_LOGS,
-    KEYS.SESSION,
-    KEYS.DEDUCTION_CONFIG,
-  ];
-  for (const key of keysToClean) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      // Process if the raw string contains any encoded form
-      const hasEncoding =
-        raw.includes("\\u") ||
-        raw.includes("%E2%82%B9") ||
-        raw.includes("%E2%80%94");
-      if (!hasEncoding) continue;
-      const parsed = JSON.parse(raw) as unknown;
-      const cleaned = cleanObjectUnicode(parsed);
-      localStorage.setItem(key, JSON.stringify(cleaned));
-    } catch {
-      // If parsing fails, try raw string cleanup
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) localStorage.setItem(key, cleanupUnicode(raw));
-      } catch {
-        // Leave as-is
-      }
+  localStorage.removeItem("openframe_unicode_cleaned_v3");
+  // Force-clear all openframe data keys so any stale encoded data is wiped.
+  // The app will re-seed with clean UTF-8 values on next load.
+  const allKeys = Object.keys(localStorage);
+  for (const key of allKeys) {
+    if (key.startsWith("openframe_") && key !== KEYS.SESSION) {
+      localStorage.removeItem(key);
     }
   }
   localStorage.setItem(KEYS.UNICODE_CLEANED, "true");
 }
 
-// ---- MIGRATION ----
 function migrateV1(): void {
   if (localStorage.getItem(KEYS.MIGRATED_V1)) return;
   const fes = getItem<FieldExecutive>(KEYS.FES);

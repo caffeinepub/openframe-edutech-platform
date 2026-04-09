@@ -1,4 +1,4 @@
-import { cn, decodeUnicode } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -39,7 +39,7 @@ export function StatCard({
           <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
           {subtitle && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {decodeUnicode(subtitle)}
+              {subtitle.replace(/\\u20[bB]9/g, "₹").replace(/\\u2014/g, "—")}
             </p>
           )}
           {trend && (

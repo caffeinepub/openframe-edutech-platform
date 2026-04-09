@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency, sanitizeCurrency } from "@/lib/utils";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -408,7 +407,7 @@ export default function FEDashboard() {
         />
         <StatCard
           title="Total Sales"
-          value={sanitizeCurrency(stats.totalSales)}
+          value={`₹${stats.totalSales.toLocaleString("en-IN")}`}
           icon={ShoppingBag}
           subtitle="From paid registrations"
           color="green"
@@ -576,7 +575,8 @@ export default function FEDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 pb-5 border-b border-border">
           <div>
             <p className="text-3xl font-bold text-green-600">
-              {sanitizeCurrency(stats.totalEarned)}
+              {"₹"}
+              {stats.totalEarned.toLocaleString("en-IN")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Overall commission from {stats.paid} paid registration
@@ -605,7 +605,8 @@ export default function FEDashboard() {
                 Total Sales
               </span>
               <span className="text-xl font-bold text-emerald-600">
-                {sanitizeCurrency(stats.totalSales)}
+                {"₹"}
+                {stats.totalSales.toLocaleString("en-IN")}
               </span>
             </div>
           </div>
